@@ -1,16 +1,6 @@
 # ghdl_toolchain.bzl
 
 # --- A. Les Flags ---
-VhdlConfigInfo = provider(fields = ["value"])
-
-def _flag_impl(ctx):
-    return VhdlConfigInfo(value = ctx.build_setting_value)
-
-vhdl_flag = rule(
-    implementation = _flag_impl,
-    build_setting = config.string(flag = True),
-)
-
 # --- B. La Toolchain Hermétique ---
 GhdlToolchainInfo = provider(
     doc = "Provider for hermetic GHDL",

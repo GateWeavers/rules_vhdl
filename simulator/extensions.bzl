@@ -14,7 +14,7 @@ def _ghdl_repo_impl(ctx):
     # Génération du BUILD file pour exposer la toolchain
     # Note : On utilise le target_settings pour matcher la config
     build_content = """
-load("@//toolchain:ghdl.bzl", "ghdl_toolchain")
+load("@//simulator:ghdl.bzl", "ghdl_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -48,7 +48,7 @@ config_setting(
 toolchain(
     name = "toolchain",
     toolchain = ":impl",
-    toolchain_type = "@//sim:toolchain_type", # Adapter selon votre label exact
+    toolchain_type = "@//simulator:toolchain_type", # Adapter selon votre label exact
     target_settings = [
         ":match_simulator",
         ":match_version",
@@ -95,7 +95,7 @@ def _nvc_repo_impl(ctx):
     # Génération du BUILD file pour exposer la toolchain NVC
     # NVC n'a pas de concept de "backend" (llvm/mcode), c'est plus simple.
     build_content = """
-load("@//:nvc_toolchain.bzl", "nvc_toolchain")
+load("@//simulator:nvc.bzl", "nvc_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -122,7 +122,7 @@ config_setting(
 toolchain(
     name = "toolchain",
     toolchain = ":impl",
-    toolchain_type = "@//:nvc_toolchain_type", # Type spécifique NVC
+    toolchain_type = "@//simulator:toolchain_type", # Type spécifique NVC
     target_settings = [
         ":match_simulator",
         ":match_version",

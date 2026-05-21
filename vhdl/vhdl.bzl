@@ -1,4 +1,14 @@
 # Constants for VHDL versioning
+VhdlConfigInfo = provider(fields = ["value"])
+
+def _flag_impl(ctx):
+    return VhdlConfigInfo(value = ctx.build_setting_value)
+
+vhdl_flag = rule(
+    implementation = _flag_impl,
+    build_setting = config.string(flag = True),
+)
+
 VHDL_VERSIONS = ["87", "93", "2008", "2019"]
 DEFAULT_VHDL_VERSION = "2008"
 

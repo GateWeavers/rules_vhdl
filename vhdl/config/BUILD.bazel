@@ -1,11 +1,7 @@
 package(default_visibility = ["//visibility:public"])
-load("//toolchain:ghdl.bzl", "vhdl_flag") # Renommé pour être générique
+load("//vhdl:vhdl.bzl", "vhdl_flag") # Renommé pour être générique
 
 # Flag pour choisir le simulateur : "ghdl" ou "nvc"
-vhdl_flag(
-    name = "simulator",
-    build_setting_default = "ghdl",
-)
-
+vhdl_flag( name = "simulator", build_setting_default = "ghdl")
 vhdl_flag(name = "version", build_setting_default = "default")
 vhdl_flag(name = "backend", build_setting_default = "default") # Ignoré par NVC
