@@ -1,0 +1,5 @@
+
+load("//vhdl/test:tests.bzl", "vhdl_rules_test_suite")
+
+# Define the test suite
+vhdl_rules_test_suite(name = "vhdl_tests")

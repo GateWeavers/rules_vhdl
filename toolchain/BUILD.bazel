@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:public"])
+
+# --- Constraint Settings (Les catégories) ---
+constraint_setting(name = "ghdl_version")
+constraint_setting(name = "ghdl_backend")
+
+# --- Constraint Values (Les valeurs possibles) ---
+
+# Versions
+constraint_value(name = "v2_0_0", constraint_setting = ":ghdl_version")
+constraint_value(name = "v3_0_0", constraint_setting = ":ghdl_version")
+constraint_value(name = "v4_1_0", constraint_setting = ":ghdl_version")
+
+# Backends
+constraint_value(name = "mcode", constraint_setting = ":ghdl_backend")
+constraint_value(name = "llvm",  constraint_setting = ":ghdl_backend")

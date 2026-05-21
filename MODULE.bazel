@@ -1,0 +1,35 @@
+
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+
+# ghdl_ext = use_extension("//:extensions.bzl", "ghdl")
+
+# # Exemple : GHDL 3.0.0 mcode pour Linux
+# ghdl_ext.toolchain(
+#     name = "linux_mcode",
+#     version = "3.0.0",
+#     backend = "mcode",
+#     url = "https://github.com/ghdl/ghdl/releases/download/v3.0.0/ghdl-v3.0.0-mcode-ubuntu20.04.tgz",
+#     sha256 = "c044...", # SHA256 réel requis
+#     strip_prefix = "ghdl-v3.0.0-mcode-ubuntu20.04",
+#     os = "linux",
+#     arch = "x86_64",
+# )
+
+# # Exemple : GHDL 4.1.0 llvm pour Linux
+# ghdl_ext.toolchain(
+#     name = "linux_llvm",
+#     version = "4.1.0",
+#     backend = "llvm",
+#     url = "https://github.com/ghdl/ghdl/releases/download/v4.1.0/ghdl-v4.1.0-llvm-ubuntu22.04.tgz",
+#     sha256 = "a123...", 
+#     strip_prefix = "ghdl-v4.1.0-llvm-ubuntu22.04",
+#     os = "linux",
+#     arch = "x86_64",
+# )
+
+# use_repo(ghdl_ext, "ghdl_3_0_0_mcode", "ghdl_4_1_0_llvm")
+
+# register_toolchains(
+#     "@ghdl_3_0_0_mcode//:ghdl_toolchain_def",
+#     "@ghdl_4_1_0_llvm//:ghdl_toolchain_def",
+# )
