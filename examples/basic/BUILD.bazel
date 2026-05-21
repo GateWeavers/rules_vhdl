@@ -1,0 +1,44 @@
+load("//vhdl:vhdl.bzl", "vhdl_library")
+load("//sim:sim.bzl", "vhdl_test")
+
+vhdl_library(
+    name = "lib",
+    srcs = ["vhdl/lib.vhd"],
+    library_name = "work",
+)
+
+vhdl_test(
+    name = "tb_ghdl",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    testbench_entity = "tb",
+    tool_simulator = "ghdl",
+)
+
+vhdl_test(
+    name = "tb_nvc",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    testbench_entity = "tb",
+    tool_simulator = "nvc",
+)
+
+vhdl_test(
+    name = "tb_ghdl_6_0",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    testbench_entity = "tb",
+    tool_simulator = "ghdl",
+    tool_version = "6.0",
+    tool_backend = "mcode",
+)
+
+# vhdl_test(
+#     name = "tb_ghdl_6_0_llvm",
+#     srcs = ["vhdl/tb.vhd"],
+#     dut = ":lib",
+#     testbench_entity = "tb",
+#     tool_simulator = "ghdl",
+#     tool_version = "6.0",
+#     tool_backend = "llvm",
+# )

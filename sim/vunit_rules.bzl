@@ -186,9 +186,7 @@ _vunit_context = rule(
 # --- MACRO UTILISATEUR ---
 
 def vunit_sim(name, dut, srcs = [],tool_simulator="ghdl", tool_version="default", tool_backend="default", deps=[], **kwargs):
-    """
-    Lance une simulation VUnit avec génération automatique du runner Python.
-    """
+    """Lance une simulation VUnit avec génération automatique du runner Python."""
     
     context_name = name + "_ctx"
     runner_name = name + "_runner.py"

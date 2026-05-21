@@ -5,3 +5,13 @@ load("//vhdl:vhdl.bzl", "vhdl_flag") # Renommé pour être générique
 vhdl_flag( name = "simulator", build_setting_default = "ghdl")
 vhdl_flag(name = "version", build_setting_default = "default")
 vhdl_flag(name = "backend", build_setting_default = "default") # Ignoré par NVC
+
+config_setting(
+    name = "simulator_ghdl",
+    flag_values = {":simulator": "ghdl"},
+)
+
+config_setting(
+    name = "simulator_nvc",
+    flag_values = {":simulator": "nvc"},
+)

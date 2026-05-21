@@ -18,11 +18,13 @@ load("@//simulator:ghdl.bzl", "ghdl_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(name = "bin", srcs = ["bin/ghdl"])
+filegroup(name = "bin", srcs = glob(["bin/*"]))
+filegroup(name = "lib", srcs = glob(["lib/**"]))
 
 ghdl_toolchain(
     name = "impl",
     ghdl_binary = ":bin",
+    ghdl_lib = [":lib"],
     version = "{version}",
     backend = "{backend}",
 )

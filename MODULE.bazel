@@ -1,35 +1,29 @@
-
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_python", version = "2.0.1")
 
-# ghdl_ext = use_extension("//:extensions.bzl", "ghdl")
+vhdl_toolchains = use_extension("//simulator:extensions.bzl", "vhdl_toolchains")
+vhdl_toolchains.ghdl(
+    name = "ghdl_6_0_mcode",
+    version = "6.0",
+    backend = "mcode",
+    url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz",
+    sha256 = "30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7",
+    strip_prefix = "ghdl-mcode-6.0.0-ubuntu24.04-x86_64",
+)
+vhdl_toolchains.ghdl(
+    name = "ghdl_6_0_llvm",
+    version = "6.0",
+    backend = "llvm",
+    url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-llvm-6.0.0-ubuntu24.04-x86_64.tar.gz",
+    sha256 = "e0064cd3d1569e7fca27b186b0d71e80c087de90db4e466ed77dc669a574d8bc",
+    strip_prefix = "ghdl-llvm-6.0.0-ubuntu24.04-x86_64",
+)
+use_repo(vhdl_toolchains, "ghdl_6_0_mcode", "ghdl_6_0_llvm")
 
-# # Exemple : GHDL 3.0.0 mcode pour Linux
-# ghdl_ext.toolchain(
-#     name = "linux_mcode",
-#     version = "3.0.0",
-#     backend = "mcode",
-#     url = "https://github.com/ghdl/ghdl/releases/download/v3.0.0/ghdl-v3.0.0-mcode-ubuntu20.04.tgz",
-#     sha256 = "c044...", # SHA256 réel requis
-#     strip_prefix = "ghdl-v3.0.0-mcode-ubuntu20.04",
-#     os = "linux",
-#     arch = "x86_64",
-# )
-
-# # Exemple : GHDL 4.1.0 llvm pour Linux
-# ghdl_ext.toolchain(
-#     name = "linux_llvm",
-#     version = "4.1.0",
-#     backend = "llvm",
-#     url = "https://github.com/ghdl/ghdl/releases/download/v4.1.0/ghdl-v4.1.0-llvm-ubuntu22.04.tgz",
-#     sha256 = "a123...", 
-#     strip_prefix = "ghdl-v4.1.0-llvm-ubuntu22.04",
-#     os = "linux",
-#     arch = "x86_64",
-# )
-
-# use_repo(ghdl_ext, "ghdl_3_0_0_mcode", "ghdl_4_1_0_llvm")
-
-# register_toolchains(
-#     "@ghdl_3_0_0_mcode//:ghdl_toolchain_def",
-#     "@ghdl_4_1_0_llvm//:ghdl_toolchain_def",
-# )
+register_toolchains(
+    "@ghdl_6_0_mcode//:toolchain",
+    "@ghdl_6_0_llvm//:toolchain",
+    "//simulator:mock_ghdl_toolchain",
+    "//simulator:mock_nvc_toolchain",
+)
