@@ -182,7 +182,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         data = [":" + context_name],
         deps = deps,
         env = {
-            "VUNIT_BAZEL_CONFIG": "$(location :" + context_name + ")",
+            "VUNIT_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",
         },
         **kwargs
     )

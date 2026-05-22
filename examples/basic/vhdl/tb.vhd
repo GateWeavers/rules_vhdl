@@ -1,3 +1,5 @@
+library lib;
+
 entity tb is
 end entity;
 
@@ -5,7 +7,7 @@ architecture sim of tb is
     signal clk : bit := '0';
     signal q   : bit;
 begin
-    dut: entity work.dummy
+    dut: entity lib.dummy
         port map (
             clk => clk,
             q   => q

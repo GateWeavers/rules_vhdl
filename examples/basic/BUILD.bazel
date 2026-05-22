@@ -5,7 +5,7 @@ load("//sim:vunit_rules.bzl", "vunit_sim")
 vhdl_library(
     name = "lib",
     srcs = ["vhdl/lib.vhd"],
-    library_name = "work",
+    library_name = "lib",
 )
 
 vhdl_test(
@@ -53,4 +53,14 @@ vunit_sim(
     tool_version = "6.0",
     tool_backend = "mcode",
     deps = ["//sim/mock_vunit:vunit"],
+)
+
+vunit_sim(
+    name = "tb_vunit_pypi",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    tool_simulator = "ghdl",
+    tool_version = "6.0",
+    tool_backend = "mcode",
+    deps = ["@pypi//vunit_hdl"],
 )
