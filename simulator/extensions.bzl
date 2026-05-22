@@ -155,6 +155,26 @@ nvc_repository = repository_rule(
 )
 
 # ==============================================================================
+# 2.5 REPOSITORY RULE : REGISTRY
+# ==============================================================================
+def _vhdl_registry_repo_impl(ctx):
+    content = "TOOLCHAIN_REGISTRY = {\n"
+    for repo_name, config in ctx.attr.config.items():
+        content += '    "{}": struct(simulator="{}", version="{}", backend="{}"),\n'.format(
+            repo_name, config[0], config[1], config[2]
+        )
+    content += "}\n"
+    ctx.file("registry.bzl", content)
+    ctx.file("BUILD", "")
+
+vhdl_registry_repo = repository_rule(
+    implementation = _vhdl_registry_repo_impl,
+    attrs = {
+        "config": attr.string_list_dict(),
+    },
+)
+
+# ==============================================================================
 # 3. TAG CLASSES (Définition des schémas de données pour MODULE.bazel)
 # ==============================================================================
 
@@ -189,6 +209,8 @@ _nvc_tag = tag_class(
 # 4. IMPLEMENTATION DE L'EXTENSION
 # ==============================================================================
 def _vhdl_extension_impl(ctx):
+    registry_config = {}
+
     # On parcourt tous les modules qui utilisent cette extension
     for mod in ctx.modules:
         
@@ -204,6 +226,7 @@ def _vhdl_extension_impl(ctx):
                 os = tool.os,
                 arch = tool.arch,
             )
+            registry_config[tool.name] = ["ghdl", tool.version, tool.backend]
 
         # --- B. Traitement des tags NVC ---
         for tool in mod.tags.nvc:
@@ -216,6 +239,12 @@ def _vhdl_extension_impl(ctx):
                 os = tool.os,
                 arch = tool.arch,
             )
+            registry_config[tool.name] = ["nvc", tool.version, "none"]
+
+    vhdl_registry_repo(
+        name = "vhdl_toolchains_registry",
+        config = registry_config,
+    )
 
 # Déclaration finale de l'extension
 vhdl_toolchains = module_extension(

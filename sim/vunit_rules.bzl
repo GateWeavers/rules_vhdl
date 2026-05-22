@@ -148,13 +148,14 @@ vunit_context = rule(
         "tool_simulator": attr.string(default = "ghdl"),
         "tool_version": attr.string(default = "default"),
         "tool_backend": attr.string(default = "default"),
+        "toolchain": attr.string(),
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
         ),
     }
 )
 
-def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", deps=[], **kwargs):
+def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", toolchain=None, deps=[], **kwargs):
     context_name = name + "_ctx"
     runner_gen_name = name + "_gen_script"
     runner_file = name + "_runner.py"
@@ -166,6 +167,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         tool_simulator = tool_simulator,
         tool_version = tool_version,
         tool_backend = tool_backend,
+        toolchain = toolchain,
         tags = kwargs.get("tags", []),
     )
     
