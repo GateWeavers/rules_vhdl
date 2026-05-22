@@ -36,7 +36,9 @@ def main():
         print(f"Unknown simulator: {sim_type}")
         sys.exit(1)
 
-    args = sys.argv[:]
+    # Expand environment variables in arguments (e.g. $XML_OUTPUT_FILE)
+    args = [os.path.expandvars(a) for a in sys.argv]
+    
     if "XML_OUTPUT_FILE" in os.environ and "--xunit-xml" not in args:
         args.extend(["--xunit-xml", os.environ["XML_OUTPUT_FILE"]])
 
@@ -182,9 +184,11 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         srcs = [runner_file],
         main = runner_file,
         data = [":" + context_name],
-        deps = deps,
+        deps = deps + ["@pypi//vunit_hdl"],
+        args = ["--xunit-xml", "$$XML_OUTPUT_FILE"],
         env = {
             "VUNIT_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",
+            "VUNIT_SIMULATOR": simulator if simulator else tool_simulator,
         },
         **kwargs
     )
