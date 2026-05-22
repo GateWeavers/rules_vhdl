@@ -69,6 +69,14 @@ vunit_sim(
     name = "tb_vunit_easy",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
-    toolchain = "@ghdl_6_0_mcode//:toolchain",
+    simulator = "@ghdl_6_0_mcode//:simulator",
     deps = ["@pypi//vunit_hdl"],
+)
+
+vhdl_test(
+    name = "tb_ghdl_easy",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    testbench_entity = "tb",
+    simulator = "@ghdl_6_0_mcode//:simulator",
 )

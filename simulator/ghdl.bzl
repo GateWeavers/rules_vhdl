@@ -54,13 +54,13 @@ ghdl_toolchain = rule(
 # --- C. La Transition ---
 # C'est elle qui fait le lien entre l'attribut de la règle sim et les flags
 def _ghdl_transition_impl(_, attr):
-    simulator = attr.tool_simulator
+    simulator_type = attr.tool_simulator
     version = attr.tool_version
     backend = attr.tool_backend
 
-    if hasattr(attr, "toolchain") and attr.toolchain:
-        # Extract repo name from label string (e.g. @ghdl_6_0_mcode//:toolchain -> ghdl_6_0_mcode)
-        tc_label = str(attr.toolchain)
+    if hasattr(attr, "simulator") and attr.simulator:
+        # Extract repo name from label string (e.g. @ghdl_6_0_mcode//:simulator -> ghdl_6_0_mcode)
+        tc_label = str(attr.simulator)
         repo_name = tc_label.split("//")[0].lstrip("@").replace("+", "").split("~")[-1]
 
         # Bzlmod repo names can be complex (e.g. @@vhdl_toolchains+ghdl_6_0_mcode), 
@@ -74,12 +74,12 @@ def _ghdl_transition_impl(_, attr):
 
         if match:
             config = TOOLCHAIN_REGISTRY[match]
-            simulator = config.simulator
+            simulator_type = config.simulator
             version = config.version
             backend = config.backend
 
     return {
-        "//vhdl/config:simulator": simulator,
+        "//vhdl/config:simulator": simulator_type,
         "//vhdl/config:version": version,
         "//vhdl/config:backend": backend,
     }

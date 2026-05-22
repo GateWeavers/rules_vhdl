@@ -112,6 +112,7 @@ vhdl_test = rule(
         "tool_simulator": attr.string(default = "ghdl"),
         "tool_version": attr.string(default = "default"),
         "tool_backend": attr.string(default = "default"),
+        "simulator": attr.string(),
         
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"

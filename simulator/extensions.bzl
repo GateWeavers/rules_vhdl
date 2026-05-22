@@ -61,6 +61,11 @@ toolchain(
         "@platforms//cpu:{arch}",
     ],
 )
+
+alias(
+    name = "simulator",
+    actual = ":toolchain",
+)
     """.format(
         version = ctx.attr.version,
         backend = ctx.attr.backend,
