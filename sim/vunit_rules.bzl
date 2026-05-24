@@ -1,58 +1,13 @@
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("//vhdl:vhdl.bzl", "VhdlLibraryInfo")
-load("//simulator:ghdl.bzl", "vhdl_sim_config_transition")
+load("@rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
+load("@rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
 # --- LE TEMPLATE PYTHON ---
 _RUNNER_TEMPLATE = """
-import os
-import sys
-import json
-from vunit import VUnit
+from sim.vunit_bazel_helper import get_vunit_from_bazel
 
 def main():
-    config_path = os.environ.get("VUNIT_BAZEL_CONFIG")
-    if not config_path:
-        print("Error: VUNIT_BAZEL_CONFIG not set.")
-        sys.exit(1)
-        
-    if not os.path.exists(config_path):
-        config_path = os.path.join(os.getcwd(), config_path)
-
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-
-    sim_type = config['simulator_type']
-    binary_path = os.path.abspath(config['binary_path'])
-    binary_dir = os.path.dirname(binary_path)
-
-    if sim_type == "ghdl":
-        os.environ["VUNIT_SIMULATOR"] = "ghdl"
-        os.environ["VUNIT_GHDL_PATH"] = binary_dir
-        os.environ["GHDL_PREFIX"] = os.path.join(binary_dir, "..", "lib", "ghdl")
-    elif sim_type == "nvc":
-        os.environ["VUNIT_SIMULATOR"] = "nvc"
-        os.environ["VUNIT_NVC_PATH"] = binary_dir
-    else:
-        print(f"Unknown simulator: {sim_type}")
-        sys.exit(1)
-
-    # Expand environment variables in arguments (e.g. $XML_OUTPUT_FILE)
-    args = [os.path.expandvars(a) for a in sys.argv]
-    
-    if "XML_OUTPUT_FILE" in os.environ and "--xunit-xml" not in args:
-        args.extend(["--xunit-xml", os.environ["XML_OUTPUT_FILE"]])
-
-    vu = VUnit.from_argv(args)
-
-    for lib_name, files in config['libraries'].items():
-        try:
-            lib = vu.library(lib_name)
-        except KeyError:
-            lib = vu.add_library(lib_name)
-            
-        for file_entry in files:
-            lib.add_source_files(file_entry['file'], vhdl_standard=file_entry['version'])
-
+    vu = get_vunit_from_bazel()
     vu.main()
 
 if __name__ == "__main__":
@@ -76,7 +31,7 @@ _vunit_runner_gen = rule(
 )
 
 def _vunit_context_impl(ctx):
-    toolchain = ctx.toolchains["//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@rules_vhdl//simulator:toolchain_type"]
     sim_type = ctx.attr.tool_simulator
     
     binary_file = None
@@ -143,7 +98,7 @@ def _vunit_context_impl(ctx):
 vunit_context = rule(
     implementation = _vunit_context_impl,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["//simulator:toolchain_type"],
+    toolchains = ["@rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "dut": attr.label(providers = [VhdlLibraryInfo], mandatory = True),
         "srcs": attr.label_list(allow_files = True),
@@ -157,7 +112,7 @@ vunit_context = rule(
     }
 )
 
-def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], **kwargs):
+def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], main=None, **kwargs):
     context_name = name + "_ctx"
     runner_gen_name = name + "_gen_script"
     runner_file = name + "_runner.py"
@@ -173,18 +128,22 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         tags = kwargs.get("tags", []),
     )
     
-    _vunit_runner_gen(
-        name = runner_gen_name,
-        out = runner_file,
-        tags = kwargs.get("tags", []),
-    )
+    if not main:
+        _vunit_runner_gen(
+            name = runner_gen_name,
+            out = runner_file,
+            tags = kwargs.get("tags", []),
+        )
+        main_script = runner_file
+    else:
+        main_script = main
     
     py_test(
         name = name,
-        srcs = [runner_file],
-        main = runner_file,
+        srcs = [main_script],
+        main = main_script,
         data = [":" + context_name],
-        deps = deps + ["@pypi//vunit_hdl"],
+        deps = deps + ["@pypi//vunit_hdl", "@rules_vhdl//sim:vunit_bazel_helper"],
         args = ["--xunit-xml", "$$XML_OUTPUT_FILE"],
         env = {
             "VUNIT_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",

@@ -214,8 +214,8 @@
   "moduleExtensions": {
     "//simulator:extensions.bzl%vhdl_toolchains": {
       "general": {
-        "bzlTransitiveDigest": "Per3agCpz0MxFq2Fi9ybxrLs9yVorPt5K1K3BO+m6yM=",
-        "usagesDigest": "/pTmM3k3zglIApAIKm9Rlz6wdjbzMplGD5zbptf4y0k=",
+        "bzlTransitiveDigest": "TxmVG+Bl3BTvjpwzqcO8N3Jwi6nfZDlV4zIeSUIJurY=",
+        "usagesDigest": "n5eQt3tuDaQvh4gK3wRRpLxyJ90RfrTjZQmWoPpUdBE=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
         ],

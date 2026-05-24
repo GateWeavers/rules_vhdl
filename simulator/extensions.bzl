@@ -14,16 +14,15 @@ def _ghdl_repo_impl(ctx):
     # Génération du BUILD file pour exposer la toolchain
     # Note : On utilise le target_settings pour matcher la config
     build_content = """
-load("@//simulator:ghdl.bzl", "ghdl_toolchain")
+load("@rules_vhdl//simulator:ghdl.bzl", "ghdl_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(name = "bin", srcs = glob(["bin/*"]))
 filegroup(name = "lib", srcs = glob(["lib/**"]))
 
 ghdl_toolchain(
     name = "impl",
-    ghdl_binary = ":bin",
+    ghdl_binary = "bin/ghdl",
     ghdl_lib = [":lib"],
     version = "{version}",
     backend = "{backend}",
@@ -32,25 +31,25 @@ ghdl_toolchain(
 # Match si flag version == version de ce repo
 config_setting(
     name = "match_version",
-    flag_values = {{"@//vhdl/config:version": "{version}"}},
+    flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
 )
 
 # Match si flag simulator == ghdl (par défaut ou explicite)
 config_setting(
     name = "match_simulator",
-    flag_values = {{"@//vhdl/config:simulator": "ghdl"}},
+    flag_values = {{"@rules_vhdl//vhdl/config:simulator": "ghdl"}},
 )
 
 # Match si flag backend == backend de ce repo
 config_setting(
     name = "match_backend",
-    flag_values = {{"@//vhdl/config:backend": "{backend}"}},
+    flag_values = {{"@rules_vhdl//vhdl/config:backend": "{backend}"}},
 )
 
 toolchain(
     name = "toolchain",
     toolchain = ":impl",
-    toolchain_type = "@//simulator:toolchain_type", # Adapter selon votre label exact
+    toolchain_type = "@rules_vhdl//simulator:toolchain_type", # Adapter selon votre label exact
     target_settings = [
         ":match_simulator",
         ":match_version",
@@ -102,7 +101,7 @@ def _nvc_repo_impl(ctx):
     # Génération du BUILD file pour exposer la toolchain NVC
     # NVC n'a pas de concept de "backend" (llvm/mcode), c'est plus simple.
     build_content = """
-load("@//simulator:nvc.bzl", "nvc_toolchain")
+load("@rules_vhdl//simulator:nvc.bzl", "nvc_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -117,19 +116,19 @@ nvc_toolchain(
 # Match si flag version == version de ce repo
 config_setting(
     name = "match_version",
-    flag_values = {{"@//vhdl/config:version": "{version}"}},
+    flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
 )
 
 # Match si flag simulator == nvc
 config_setting(
     name = "match_simulator",
-    flag_values = {{"@//vhdl/config:simulator": "nvc"}},
+    flag_values = {{"@rules_vhdl//vhdl/config:simulator": "nvc"}},
 )
 
 toolchain(
     name = "toolchain",
     toolchain = ":impl",
-    toolchain_type = "@//simulator:toolchain_type", # Type spécifique NVC
+    toolchain_type = "@rules_vhdl//simulator:toolchain_type", # Type spécifique NVC
     target_settings = [
         ":match_simulator",
         ":match_version",

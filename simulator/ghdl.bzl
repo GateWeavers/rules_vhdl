@@ -1,9 +1,5 @@
 load("@vhdl_toolchains_registry//:registry.bzl", "TOOLCHAIN_REGISTRY")
 
-# ghdl_toolchain.bzl
-
-# --- A. Les Flags ---
-# --- B. La Toolchain Hermétique ---
 GhdlToolchainInfo = provider(
     doc = "Provider for hermetic GHDL",
     fields = {
@@ -44,31 +40,37 @@ def _ghdl_toolchain_impl(ctx):
 ghdl_toolchain = rule(
     implementation = _ghdl_toolchain_impl,
     attrs = {
-        "ghdl_binary": attr.label(mandatory = True),
+        "ghdl_binary": attr.label(allow_single_file = True, mandatory = True),
         "ghdl_lib": attr.label_list(allow_files = True),
-        "version": attr.string(),
-        "backend": attr.string(),
+        "version": attr.string(mandatory = True),
+        "backend": attr.string(mandatory = True),
     },
 )
 
-# --- C. La Transition ---
-# C'est elle qui fait le lien entre l'attribut de la règle sim et les flags
-def _ghdl_transition_impl(_, attr):
-    simulator_type = attr.tool_simulator
-    version = attr.tool_version
-    backend = attr.tool_backend
+def _ghdl_transition_impl(settings, attr):
+    # Default values
+    simulator_type = "ghdl"
+    version = "default"
+    backend = "default"
+
+    # Use values from attributes if provided
+    if hasattr(attr, "tool_simulator") and attr.tool_simulator:
+        simulator_type = attr.tool_simulator
+    if hasattr(attr, "tool_version") and attr.tool_version:
+        version = attr.tool_version
+    if hasattr(attr, "tool_backend") and attr.tool_backend:
+        backend = attr.tool_backend
 
     if hasattr(attr, "simulator") and attr.simulator:
         # Extract repo name from label string (e.g. @ghdl_6_0_mcode//:simulator -> ghdl_6_0_mcode)
-        tc_label = str(attr.simulator)
-        repo_name = tc_label.split("//")[0].lstrip("@").replace("+", "").split("~")[-1]
+        repo_name = attr.simulator.split("//")[0].lstrip("@")
 
         # Bzlmod repo names can be complex (e.g. @@vhdl_toolchains+ghdl_6_0_mcode), 
         # but the registry is keyed by the name provided in the extension.
         # We need to find the match in the registry keys.
         match = None
         for key in TOOLCHAIN_REGISTRY.keys():
-            if key in repo_name or repo_name in key: # Simple heuristic for bzlmod
+            if key in repo_name:
                 match = key
                 break
 
@@ -79,17 +81,17 @@ def _ghdl_transition_impl(_, attr):
             backend = config.backend
 
     return {
-        "//vhdl/config:simulator": simulator_type,
-        "//vhdl/config:version": version,
-        "//vhdl/config:backend": backend,
+        "@rules_vhdl//vhdl/config:simulator": simulator_type,
+        "@rules_vhdl//vhdl/config:version": version,
+        "@rules_vhdl//vhdl/config:backend": backend,
     }
 
 vhdl_sim_config_transition = transition(
     implementation = _ghdl_transition_impl,
     inputs = [],
     outputs = [
-        "//vhdl/config:simulator",
-        "//vhdl/config:version",
-        "//vhdl/config:backend"
+        "@rules_vhdl//vhdl/config:simulator",
+        "@rules_vhdl//vhdl/config:version",
+        "@rules_vhdl//vhdl/config:backend",
     ],
 )

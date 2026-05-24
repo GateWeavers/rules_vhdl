@@ -1,5 +1,5 @@
-load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
-load("//simulator:ghdl.bzl", "vhdl_sim_config_transition")
+load("@rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
+load("@rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
 def _map_vhdl_version_to_ghdl_flag(version):
     if version == "2008": return "08"
@@ -9,7 +9,7 @@ def _map_vhdl_version_to_ghdl_flag(version):
     return "08"
 
 def _vhdl_test_impl(ctx):
-    toolchain = ctx.toolchains["//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@rules_vhdl//simulator:toolchain_type"]
     
     # Collect all sources for runfiles
     dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
@@ -101,7 +101,7 @@ vhdl_test = rule(
     implementation = _vhdl_test_impl,
     test = True,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["//simulator:toolchain_type"],
+    toolchains = ["@rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "srcs": attr.label_list(allow_files = [".vhd"], mandatory = True),
         "dut": attr.label(providers = [VhdlLibraryInfo]),

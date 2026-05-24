@@ -68,3 +68,11 @@ vhdl_test(
     testbench_entity = "tb",
     simulator = "@ghdl_6_0_mcode//:simulator",
 )
+
+vunit_sim(
+    name = "tb_vunit_custom",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    main = "custom_runner.py",
+    simulator = "@ghdl_6_0_mcode//:simulator",
+)
