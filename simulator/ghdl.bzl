@@ -1,4 +1,4 @@
-load("@vhdl_toolchains_registry//:registry.bzl", "TOOLCHAIN_REGISTRY", "DEFAULT_TOOLCHAIN")
+load("@vhdl_toolchains//:registry.bzl", "TOOLCHAIN_REGISTRY", "DEFAULT_TOOLCHAIN")
 
 GhdlToolchainInfo = provider(
     doc = "Provider for hermetic GHDL",
@@ -61,16 +61,34 @@ def _ghdl_transition_impl(settings, attr):
     if hasattr(attr, "tool_backend") and attr.tool_backend:
         backend = attr.tool_backend
 
+    selected_repo = ""
     if hasattr(attr, "simulator") and attr.simulator:
-        # Extract repo name from label string (e.g. @ghdl_6_0_mcode//:simulator -> ghdl_6_0_mcode)
-        repo_name = attr.simulator.split("//")[0].lstrip("@")
+        tc_label = str(attr.simulator)
+        if "//:" in tc_label:
+            parts = tc_label.split("//:")
+            repo_part = parts[0].lstrip("@").replace("+", "").split("~")[-1]
+            target_part = parts[1]
+            
+            if repo_part == "vhdl_toolchains":
+                if target_part == "default":
+                    selected_repo = DEFAULT_TOOLCHAIN
+                else:
+                    selected_repo = target_part
+            else:
+                # Direct repo access (backward compatibility or external)
+                selected_repo = repo_part
+    
+    if not selected_repo and simulator_type == "ghdl" and version == "default" and backend == "default":
+        # Global resolution fallback (Bazel native)
+        pass
 
+    if selected_repo:
         # Bzlmod repo names can be complex (e.g. @@vhdl_toolchains+ghdl_6_0_mcode), 
         # but the registry is keyed by the name provided in the extension.
         # We need to find the match in the registry keys.
         match = None
         for key in TOOLCHAIN_REGISTRY.keys():
-            if key in repo_name:
+            if key == selected_repo or key in selected_repo:
                 match = key
                 break
 

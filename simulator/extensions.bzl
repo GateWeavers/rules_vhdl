@@ -1,70 +1,62 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # ==============================================================================
-# 1. REPOSITORY RULE : GHDL
+# 1. TEMPLATES POUR LE BUILD FILE UNIQUE
 # ==============================================================================
-def _ghdl_repo_impl(ctx):
-    # Téléchargement de l'archive GHDL
-    ctx.download_and_extract(
-        url = ctx.attr.url,
-        sha256 = ctx.attr.sha256,
-        strip_prefix = ctx.attr.strip_prefix,
-    )
-    
-    # Génération du BUILD file pour exposer la toolchain
-    # Note : On utilise le target_settings pour matcher la config
-    build_content = """
-load("@rules_vhdl//simulator:ghdl.bzl", "ghdl_toolchain")
 
+_COMMON_HEADER = """
 package(default_visibility = ["//visibility:public"])
-
-filegroup(name = "lib", srcs = glob(["lib/**"]))
-
-ghdl_toolchain(
-    name = "impl",
-    ghdl_binary = "bin/ghdl",
-    ghdl_lib = [":lib"],
-    version = "{version}",
-    backend = "{backend}",
-)
-
-# Match si flag version == version de ce repo
-config_setting(
-    name = "match_version",
-    flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
-)
-
-# Match si flag simulator == ghdl
-config_setting(
-    name = "match_simulator",
-    flag_values = {{"@rules_vhdl//vhdl/config:simulator": "ghdl"}},
-)
-
-# Match si flag backend == backend de ce repo
-config_setting(
-    name = "match_backend",
-    flag_values = {{"@rules_vhdl//vhdl/config:backend": "{backend}"}},
-)
 
 # Matchers pour les valeurs par défaut
 config_setting(
     name = "match_version_default",
-    flag_values = {{"@rules_vhdl//vhdl/config:version": "default"}},
+    flag_values = {"@rules_vhdl//vhdl/config:version": "default"},
 )
 
 config_setting(
     name = "match_backend_default",
-    flag_values = {{"@rules_vhdl//vhdl/config:backend": "default"}},
+    flag_values = {"@rules_vhdl//vhdl/config:backend": "default"},
+)
+"""
+
+_GHDL_TEMPLATE = """
+# --- Toolchain: {name} (GHDL) ---
+filegroup(name = "{name}_bin", srcs = ["{name}/bin/ghdl"])
+filegroup(name = "{name}_lib_files", srcs = glob(["{name}/lib/**"]))
+
+load("@rules_vhdl//simulator:ghdl.bzl", "ghdl_toolchain")
+
+ghdl_toolchain(
+    name = "{name}_impl",
+    ghdl_binary = ":{name}_bin",
+    ghdl_lib = [":{name}_lib_files"],
+    version = "{version}",
+    backend = "{backend}",
+)
+
+config_setting(
+    name = "{name}_match_version",
+    flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
+)
+
+config_setting(
+    name = "{name}_match_simulator",
+    flag_values = {{"@rules_vhdl//vhdl/config:simulator": "ghdl"}},
+)
+
+config_setting(
+    name = "{name}_match_backend",
+    flag_values = {{"@rules_vhdl//vhdl/config:backend": "{backend}"}},
 )
 
 toolchain(
-    name = "toolchain",
-    toolchain = ":impl",
+    name = "{name}_toolchain",
+    toolchain = ":{name}_impl",
     toolchain_type = "@rules_vhdl//simulator:toolchain_type",
     target_settings = [
-        ":match_simulator",
-        ":match_version",
-        ":match_backend",
+        ":{name}_match_simulator",
+        ":{name}_match_version",
+        ":{name}_match_backend",
     ],
     exec_compatible_with = [
         "@platforms//os:{os}",
@@ -72,24 +64,21 @@ toolchain(
     ],
 )
 
-{default_toolchain_rule}
+{default_rule}
 
 alias(
-    name = "simulator",
-    actual = ":toolchain",
+    name = "{name}",
+    actual = ":{name}_toolchain",
 )
-    """.format(
-        version = ctx.attr.version,
-        backend = ctx.attr.backend,
-        os = ctx.attr.os,
-        arch = ctx.attr.arch,
-        default_toolchain_rule = """
+"""
+
+_GHDL_DEFAULT_TEMPLATE = """
 toolchain(
-    name = "default_toolchain",
-    toolchain = ":impl",
+    name = "{name}_default_toolchain",
+    toolchain = ":{name}_impl",
     toolchain_type = "@rules_vhdl//simulator:toolchain_type",
     target_settings = [
-        ":match_simulator",
+        ":{name}_match_simulator",
         ":match_version_default",
         ":match_backend_default",
     ],
@@ -98,76 +87,37 @@ toolchain(
         "@platforms//cpu:{arch}",
     ],
 )
-        """.format(os = ctx.attr.os, arch = ctx.attr.arch) if ctx.attr.is_default else ""
-    )
-    
-    ctx.file("BUILD", build_content)
+"""
 
-ghdl_repository = repository_rule(
-    implementation = _ghdl_repo_impl,
-    attrs = {
-        "url": attr.string(mandatory = True),
-        "sha256": attr.string(mandatory = True),
-        "strip_prefix": attr.string(),
-        "version": attr.string(mandatory = True),
-        "backend": attr.string(mandatory = True),
-        "os": attr.string(mandatory = True),
-        "arch": attr.string(mandatory = True),
-        "is_default": attr.bool(default = False),
-    },
-)
+_NVC_TEMPLATE = """
+# --- Toolchain: {name} (NVC) ---
+filegroup(name = "{name}_bin", srcs = ["{name}/bin/nvc"])
 
-# ==============================================================================
-# 2. REPOSITORY RULE : NVC
-# ==============================================================================
-def _nvc_repo_impl(ctx):
-    # Téléchargement de l'archive NVC
-    ctx.download_and_extract(
-        url = ctx.attr.url,
-        sha256 = ctx.attr.sha256,
-        strip_prefix = ctx.attr.strip_prefix,
-    )
-    
-    # Génération du BUILD file pour exposer la toolchain NVC
-    # NVC n'a pas de concept de "backend" (llvm/mcode), c'est plus simple.
-    build_content = """
 load("@rules_vhdl//simulator:nvc.bzl", "nvc_toolchain")
 
-package(default_visibility = ["//visibility:public"])
-
-filegroup(name = "bin", srcs = ["bin/nvc"])
-
 nvc_toolchain(
-    name = "impl",
-    nvc_binary = ":bin",
+    name = "{name}_impl",
+    nvc_binary = ":{name}_bin",
     version = "{version}",
 )
 
-# Match si flag version == version de ce repo
 config_setting(
-    name = "match_version",
+    name = "{name}_match_version",
     flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
 )
 
-# Match si flag simulator == nvc
 config_setting(
-    name = "match_simulator",
+    name = "{name}_match_simulator",
     flag_values = {{"@rules_vhdl//vhdl/config:simulator": "nvc"}},
 )
 
-# Matcher pour la valeur par défaut
-config_setting(
-    name = "match_version_default",
-    flag_values = {{"@rules_vhdl//vhdl/config:version": "default"}},
-)
-
 toolchain(
-    name = "toolchain",
-    toolchain = ":impl",
+    name = "{name}_toolchain",
+    toolchain = ":{name}_impl",
     toolchain_type = "@rules_vhdl//simulator:toolchain_type",
     target_settings = [
-        ":match_simulator",
-        ":match_version",
+        ":{name}_match_simulator",
+        ":{name}_match_version",
     ],
     exec_compatible_with = [
         "@platforms//os:{os}",
@@ -175,18 +125,21 @@ toolchain(
     ],
 )
 
-{default_toolchain_rule}
-    """.format(
-        version = ctx.attr.version,
-        os = ctx.attr.os,
-        arch = ctx.attr.arch,
-        default_toolchain_rule = """
+{default_rule}
+
+alias(
+    name = "{name}",
+    actual = ":{name}_toolchain",
+)
+"""
+
+_NVC_DEFAULT_TEMPLATE = """
 toolchain(
-    name = "default_toolchain",
-    toolchain = ":impl",
+    name = "{name}_default_toolchain",
+    toolchain = ":{name}_impl",
     toolchain_type = "@rules_vhdl//simulator:toolchain_type",
     target_settings = [
-        ":match_simulator",
+        ":{name}_match_simulator",
         ":match_version_default",
     ],
     exec_compatible_with = [
@@ -194,54 +147,88 @@ toolchain(
         "@platforms//cpu:{arch}",
     ],
 )
-        """.format(os = ctx.attr.os, arch = ctx.attr.arch) if ctx.attr.is_default else ""
-    )
+"""
+
+# ==============================================================================
+# 2. REPOSITORY RULE : UNIFIED TOOLCHAIN HUB
+# ==============================================================================
+
+def _vhdl_combined_toolchains_repo_impl(ctx):
+    tools = json.decode(ctx.attr.tools_json)
+    default_toolchain = ctx.attr.default_toolchain
     
+    registry_content = "TOOLCHAIN_REGISTRY = {\n"
+    build_content = _COMMON_HEADER
+    
+    for tool in tools:
+        name = tool["name"]
+        type = tool["type"]
+        
+        # Download and extract into subdirectory
+        ctx.download_and_extract(
+            url = tool["url"],
+            sha256 = tool["sha256"],
+            strip_prefix = tool["strip_prefix"],
+            output = name,
+        )
+        
+        # Collect registry info
+        registry_content += '    "{}": struct(simulator="{}", version="{}", backend="{}"),\n'.format(
+            name, type, tool["version"], tool.get("backend", "none")
+        )
+        
+        # Generate BUILD rules
+        if type == "ghdl":
+            default_rule = ""
+            if name == default_toolchain:
+                default_rule = _GHDL_DEFAULT_TEMPLATE.format(
+                    name = name, os = tool["os"], arch = tool["arch"]
+                )
+            
+            build_content += _GHDL_TEMPLATE.format(
+                name = name,
+                version = tool["version"],
+                backend = tool["backend"],
+                os = tool["os"],
+                arch = tool["arch"],
+                default_rule = default_rule,
+            )
+        elif type == "nvc":
+            default_rule = ""
+            if name == default_toolchain:
+                default_rule = _NVC_DEFAULT_TEMPLATE.format(
+                    name = name, os = tool["os"], arch = tool["arch"]
+                )
+                
+            build_content += _NVC_TEMPLATE.format(
+                name = name,
+                version = tool["version"],
+                os = tool["os"],
+                arch = tool["arch"],
+                default_rule = default_rule,
+            )
+            
+    registry_content += "}\n\n"
+    registry_content += 'DEFAULT_TOOLCHAIN = "{}"\n'.format(default_toolchain)
+    
+    ctx.file("registry.bzl", registry_content)
     ctx.file("BUILD", build_content)
 
-nvc_repository = repository_rule(
-    implementation = _nvc_repo_impl,
+vhdl_combined_toolchains_repo = repository_rule(
+    implementation = _vhdl_combined_toolchains_repo_impl,
     attrs = {
-        "url": attr.string(mandatory = True),
-        "sha256": attr.string(mandatory = True),
-        "strip_prefix": attr.string(),
-        "version": attr.string(mandatory = True),
-        "os": attr.string(mandatory = True),
-        "arch": attr.string(mandatory = True),
-        "is_default": attr.bool(default = False),
-    },
-)
-
-# ==============================================================================
-# 2.5 REPOSITORY RULE : REGISTRY
-# ==============================================================================
-def _vhdl_registry_repo_impl(ctx):
-    content = "TOOLCHAIN_REGISTRY = {\n"
-    for repo_name, config in ctx.attr.config.items():
-        content += '    "{}": struct(simulator="{}", version="{}", backend="{}"),\n'.format(
-            repo_name, config[0], config[1], config[2]
-        )
-    content += "}\n\n"
-    content += 'DEFAULT_TOOLCHAIN = "{}"\n'.format(ctx.attr.default_toolchain)
-    ctx.file("registry.bzl", content)
-    ctx.file("BUILD", "")
-
-vhdl_registry_repo = repository_rule(
-    implementation = _vhdl_registry_repo_impl,
-    attrs = {
-        "config": attr.string_list_dict(),
+        "tools_json": attr.string(mandatory = True),
         "default_toolchain": attr.string(),
     },
 )
 
 # ==============================================================================
-# 3. TAG CLASSES (Définition des schémas de données pour MODULE.bazel)
+# 3. TAG CLASSES
 # ==============================================================================
 
-# Schéma pour GHDL
 _ghdl_tag = tag_class(
     attrs = {
-        "name": attr.string(mandatory = True, doc = "Nom unique du repo"),
+        "name": attr.string(mandatory = True),
         "version": attr.string(mandatory = True),
         "backend": attr.string(mandatory = True, values = ["mcode", "llvm"]),
         "url": attr.string(mandatory = True),
@@ -253,10 +240,9 @@ _ghdl_tag = tag_class(
     }
 )
 
-# Schéma pour NVC (Nouveau)
 _nvc_tag = tag_class(
     attrs = {
-        "name": attr.string(mandatory = True, doc = "Nom unique du repo"),
+        "name": attr.string(mandatory = True),
         "version": attr.string(mandatory = True),
         "url": attr.string(mandatory = True),
         "sha256": attr.string(mandatory = True),
@@ -270,59 +256,53 @@ _nvc_tag = tag_class(
 # ==============================================================================
 # 4. IMPLEMENTATION DE L'EXTENSION
 # ==============================================================================
+
 def _vhdl_extension_impl(ctx):
-    registry_config = {}
+    tools = []
     default_toolchain = ""
 
-    # On parcourt tous les modules qui utilisent cette extension
     for mod in ctx.modules:
-        
-        # --- A. Traitement des tags GHDL ---
         for tool in mod.tags.ghdl:
             if tool.is_default:
                 if default_toolchain:
                     fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
                 default_toolchain = tool.name
+            
+            tools.append({
+                "name": tool.name,
+                "type": "ghdl",
+                "version": tool.version,
+                "backend": tool.backend,
+                "url": tool.url,
+                "sha256": tool.sha256,
+                "strip_prefix": tool.strip_prefix,
+                "os": tool.os,
+                "arch": tool.arch,
+            })
 
-            ghdl_repository(
-                name = tool.name,
-                url = tool.url,
-                sha256 = tool.sha256,
-                strip_prefix = tool.strip_prefix,
-                version = tool.version,
-                backend = tool.backend,
-                os = tool.os,
-                arch = tool.arch,
-                is_default = tool.is_default,
-            )
-            registry_config[tool.name] = ["ghdl", tool.version, tool.backend]
-
-        # --- B. Traitement des tags NVC ---
         for tool in mod.tags.nvc:
             if tool.is_default:
                 if default_toolchain:
                     fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
                 default_toolchain = tool.name
 
-            nvc_repository(
-                name = tool.name,
-                url = tool.url,
-                sha256 = tool.sha256,
-                strip_prefix = tool.strip_prefix,
-                version = tool.version,
-                os = tool.os,
-                arch = tool.arch,
-                is_default = tool.is_default,
-            )
-            registry_config[tool.name] = ["nvc", tool.version, "none"]
+            tools.append({
+                "name": tool.name,
+                "type": "nvc",
+                "version": tool.version,
+                "url": tool.url,
+                "sha256": tool.sha256,
+                "strip_prefix": tool.strip_prefix,
+                "os": tool.os,
+                "arch": tool.arch,
+            })
 
-    vhdl_registry_repo(
-        name = "vhdl_toolchains_registry",
-        config = registry_config,
+    vhdl_combined_toolchains_repo(
+        name = "vhdl_toolchains",
+        tools_json = json.encode(tools),
         default_toolchain = default_toolchain,
     )
 
-# Déclaration finale de l'extension
 vhdl_toolchains = module_extension(
     implementation = _vhdl_extension_impl,
     tag_classes = {

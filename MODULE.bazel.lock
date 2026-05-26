@@ -214,53 +214,16 @@
   "moduleExtensions": {
     "//simulator:extensions.bzl%vhdl_toolchains": {
       "general": {
-        "bzlTransitiveDigest": "mm8tnGTcnDD1G2It92JN0TsqyxZLHFVNknep+0cHFqg=",
+        "bzlTransitiveDigest": "N15B6yrcXfU5fjrPWjRei8mTXhr5YC994WGrGi0QMhM=",
         "usagesDigest": "hak6+FWnz6UmAtAFr787T13NedvHwj5mjva6sAChTYc=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
         ],
         "generatedRepoSpecs": {
-          "ghdl_6_0_mcode": {
-            "repoRuleId": "@@//simulator:extensions.bzl%ghdl_repository",
+          "vhdl_toolchains": {
+            "repoRuleId": "@@//simulator:extensions.bzl%vhdl_combined_toolchains_repo",
             "attributes": {
-              "url": "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz",
-              "sha256": "30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7",
-              "strip_prefix": "ghdl-mcode-6.0.0-ubuntu24.04-x86_64",
-              "version": "6.0",
-              "backend": "mcode",
-              "os": "linux",
-              "arch": "x86_64",
-              "is_default": true
-            }
-          },
-          "ghdl_6_0_llvm": {
-            "repoRuleId": "@@//simulator:extensions.bzl%ghdl_repository",
-            "attributes": {
-              "url": "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-llvm-6.0.0-ubuntu24.04-x86_64.tar.gz",
-              "sha256": "e0064cd3d1569e7fca27b186b0d71e80c087de90db4e466ed77dc669a574d8bc",
-              "strip_prefix": "ghdl-llvm-6.0.0-ubuntu24.04-x86_64",
-              "version": "6.0",
-              "backend": "llvm",
-              "os": "linux",
-              "arch": "x86_64",
-              "is_default": false
-            }
-          },
-          "vhdl_toolchains_registry": {
-            "repoRuleId": "@@//simulator:extensions.bzl%vhdl_registry_repo",
-            "attributes": {
-              "config": {
-                "ghdl_6_0_mcode": [
-                  "ghdl",
-                  "6.0",
-                  "mcode"
-                ],
-                "ghdl_6_0_llvm": [
-                  "ghdl",
-                  "6.0",
-                  "llvm"
-                ]
-              },
+              "tools_json": "[{\"arch\":\"x86_64\",\"backend\":\"mcode\",\"name\":\"ghdl_6_0_mcode\",\"os\":\"linux\",\"sha256\":\"30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7\",\"strip_prefix\":\"ghdl-mcode-6.0.0-ubuntu24.04-x86_64\",\"type\":\"ghdl\",\"url\":\"https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz\",\"version\":\"6.0\"},{\"arch\":\"x86_64\",\"backend\":\"llvm\",\"name\":\"ghdl_6_0_llvm\",\"os\":\"linux\",\"sha256\":\"e0064cd3d1569e7fca27b186b0d71e80c087de90db4e466ed77dc669a574d8bc\",\"strip_prefix\":\"ghdl-llvm-6.0.0-ubuntu24.04-x86_64\",\"type\":\"ghdl\",\"url\":\"https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-llvm-6.0.0-ubuntu24.04-x86_64.tar.gz\",\"version\":\"6.0\"}]",
               "default_toolchain": "ghdl_6_0_mcode"
             }
           }

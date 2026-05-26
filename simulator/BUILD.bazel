@@ -17,6 +17,24 @@ constraint_value(name = "v4_1_0", constraint_setting = ":version")
 constraint_value(name = "mcode", constraint_setting = ":backend")
 constraint_value(name = "llvm",  constraint_setting = ":backend")
 
+# Mock matchers
+config_setting(
+    name = "match_mock_ghdl",
+    flag_values = {
+        "//vhdl/config:simulator": "ghdl",
+        "//vhdl/config:version": "default",
+        "//vhdl/config:backend": "default",
+    },
+)
+
+config_setting(
+    name = "match_mock_nvc",
+    flag_values = {
+        "//vhdl/config:simulator": "nvc",
+        "//vhdl/config:version": "default",
+    },
+)
+
 # Mock Toolchains for Testing
 mock_ghdl_toolchain(
     name = "mock_ghdl_impl",
@@ -27,7 +45,7 @@ toolchain(
     name = "mock_ghdl_toolchain",
     toolchain = ":mock_ghdl_impl",
     toolchain_type = ":toolchain_type",
-    target_settings = ["//vhdl/config:simulator_ghdl"],
+    target_settings = [":match_mock_ghdl"],
 )
 
 mock_nvc_toolchain(
@@ -39,5 +57,5 @@ toolchain(
     name = "mock_nvc_toolchain",
     toolchain = ":mock_nvc_impl",
     toolchain_type = ":toolchain_type",
-    target_settings = ["//vhdl/config:simulator_nvc"],
+    target_settings = [":match_mock_nvc"],
 )
