@@ -37,6 +37,7 @@ vhdl_toolchains.ghdl(
     url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz",
     sha256 = "30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7",
     strip_prefix = "ghdl-mcode-6.0.0-ubuntu24.04-x86_64",
+    is_default = True,
 )
 vhdl_toolchains.ghdl(
     name = "ghdl_6_0_llvm",
@@ -49,8 +50,8 @@ vhdl_toolchains.ghdl(
 use_repo(vhdl_toolchains, "ghdl_6_0_mcode", "ghdl_6_0_llvm", "vhdl_toolchains_registry")
 
 register_toolchains(
-    "@ghdl_6_0_mcode//:toolchain",
-    "@ghdl_6_0_llvm//:toolchain",
+    "@ghdl_6_0_mcode//:all",
+    "@ghdl_6_0_llvm//:all",
     "//simulator:mock_ghdl_toolchain",
     "//simulator:mock_nvc_toolchain",
 )

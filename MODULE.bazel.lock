@@ -214,8 +214,8 @@
   "moduleExtensions": {
     "//simulator:extensions.bzl%vhdl_toolchains": {
       "general": {
-        "bzlTransitiveDigest": "TxmVG+Bl3BTvjpwzqcO8N3Jwi6nfZDlV4zIeSUIJurY=",
-        "usagesDigest": "n5eQt3tuDaQvh4gK3wRRpLxyJ90RfrTjZQmWoPpUdBE=",
+        "bzlTransitiveDigest": "mm8tnGTcnDD1G2It92JN0TsqyxZLHFVNknep+0cHFqg=",
+        "usagesDigest": "hak6+FWnz6UmAtAFr787T13NedvHwj5mjva6sAChTYc=",
         "recordedInputs": [
           "REPO_MAPPING:,bazel_tools bazel_tools"
         ],
@@ -229,7 +229,8 @@
               "version": "6.0",
               "backend": "mcode",
               "os": "linux",
-              "arch": "x86_64"
+              "arch": "x86_64",
+              "is_default": true
             }
           },
           "ghdl_6_0_llvm": {
@@ -241,7 +242,8 @@
               "version": "6.0",
               "backend": "llvm",
               "os": "linux",
-              "arch": "x86_64"
+              "arch": "x86_64",
+              "is_default": false
             }
           },
           "vhdl_toolchains_registry": {
@@ -258,7 +260,8 @@
                   "6.0",
                   "llvm"
                 ]
-              }
+              },
+              "default_toolchain": "ghdl_6_0_mcode"
             }
           }
         }

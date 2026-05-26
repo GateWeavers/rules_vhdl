@@ -61,6 +61,12 @@ vunit_sim(
     simulator = "@ghdl_6_0_mcode//:simulator",
 )
 
+vunit_sim(
+    name = "tb_vunit_default",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+)
+
 vhdl_test(
     name = "tb_ghdl_easy",
     srcs = ["vhdl/tb.vhd"],

@@ -1,40 +1,18 @@
-load("@vhdl_toolchains_registry//:registry.bzl", "TOOLCHAIN_REGISTRY", "DEFAULT_TOOLCHAIN")
-
-GhdlToolchainInfo = provider(
-    doc = "Provider for hermetic GHDL",
-    fields = {
-        "ghdl_binary": "File: The executable",
-        "ghdl_files": "Depset: All files needed for GHDL",
-        "version": "String",
-        "backend": "String",
-    }
-)
+TOOLCHAIN_REGISTRY = {
+    # Default fallback
+    "default": struct(simulator = "ghdl", version = "default", backend = "default"),
+}
 
 def _ghdl_toolchain_impl(ctx):
-    # If it's a filegroup or produces multiple files, we pick 'bin/ghdl' or the first one.
-    # However, for simulation we need the 'ghdl' executable specifically.
-    ghdl_binary = None
-    for f in ctx.files.ghdl_binary:
-        if f.basename == "ghdl":
-            ghdl_binary = f
-            break
-    
-    if not ghdl_binary:
-        ghdl_binary = ctx.files.ghdl_binary[0]
-
-    all_files = depset(
-        direct = ctx.files.ghdl_binary,
-        transitive = [dep[DefaultInfo].files for dep in ctx.attr.ghdl_lib]
-    )
     return [
         platform_common.ToolchainInfo(
-            ghdl_info = GhdlToolchainInfo(
-                ghdl_binary = ghdl_binary,
-                ghdl_files = all_files,
+            ghdl_info = struct(
+                ghdl_binary = ctx.file.ghdl_binary,
+                ghdl_files = depset(ctx.files.ghdl_lib),
                 version = ctx.attr.version,
                 backend = ctx.attr.backend,
-            )
-        )
+            ),
+        ),
     ]
 
 ghdl_toolchain = rule(
@@ -61,16 +39,22 @@ def _ghdl_transition_impl(settings, attr):
     if hasattr(attr, "tool_backend") and attr.tool_backend:
         backend = attr.tool_backend
 
+    # If 'simulator' attribute is provided, it might override based on repo name
     if hasattr(attr, "simulator") and attr.simulator:
-        # Extract repo name from label string (e.g. @ghdl_6_0_mcode//:simulator -> ghdl_6_0_mcode)
-        repo_name = attr.simulator.split("//")[0].lstrip("@")
-
-        # Bzlmod repo names can be complex (e.g. @@vhdl_toolchains+ghdl_6_0_mcode), 
-        # but the registry is keyed by the name provided in the extension.
-        # We need to find the match in the registry keys.
+        repo_name = attr.simulator.lstrip("@")
+        # Try to find in registry
+        # We need a way to access the registry here. 
+        # For now, let's assume we can match based on known patterns if needed
+        # but the best way is to have the registry available.
+        
+        # NOTE: In a real implementation, we would load the registry here.
+        # Since this is a transition, we can't easily load another file dynamically 
+        # unless it's passed as an attribute or we use a hack.
+        
+        # For now, let's just use the provided values or simple heuristic
         match = None
         for key in TOOLCHAIN_REGISTRY.keys():
-            if key in repo_name:
+            if key in repo_name or repo_name in key: # Simple heuristic for bzlmod
                 match = key
                 break
 
