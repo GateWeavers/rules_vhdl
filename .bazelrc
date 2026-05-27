@@ -44,7 +44,7 @@ query --output=label_kind
 test --test_output=errors
 
 #reduce the limit to supress vivado synthesis stdout
-build --experimental_ui_max_stdouterr_bytes=32768
+build --experimental_ui_max_stdouterr_bytes=1000000
 
 # The printed files are convenient strings for copy+pasting to the shell, to execute them.
 # This option requires an integer argument, which is the threshold number of targets above which result information is not printed.

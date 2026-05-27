@@ -71,7 +71,7 @@ def _vunit_context_impl(ctx):
     tb_files = ctx.files.srcs
     transitive_srcs.extend(tb_files)
     
-    tb_lib_name = "lib_tb"
+    tb_lib_name = ctx.attr.name + "_lib"
     if tb_lib_name not in libraries_config:
         libraries_config[tb_lib_name] = []
         

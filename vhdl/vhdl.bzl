@@ -11,6 +11,11 @@ vhdl_flag = rule(
 
 VHDL_VERSIONS = ["87", "93", "2008", "2019"]
 DEFAULT_VHDL_VERSION = "2008"
+RESERVED_LIB_NAMES = ["std", "ieee", "work"]
+
+def _validate_library_name(name):
+    if name.lower() in RESERVED_LIB_NAMES:
+        fail("Library name '{}' is reserved and cannot be used.".format(name))
 
 # Provider for library management
 VhdlLibraryInfo = provider(
@@ -73,6 +78,7 @@ def _vhdl_library_impl(ctx):
     """
     Implementation of the vhdl_library rule using common logic.
     """
+    _validate_library_name(ctx.attr.library_name)
     libs = _process_vhdl_libraries(
         ctx = ctx,
         srcs = ctx.files.srcs,
@@ -93,6 +99,7 @@ def _vhdl_module_impl(ctx):
     Implementation of the vhdl_module rule using common logic and transitive depset tracking.
     """
     # 1. Process libraries
+    _validate_library_name(ctx.attr.library_name)
     libs = _process_vhdl_libraries(
         ctx = ctx,
         srcs = ctx.files.srcs,
@@ -137,16 +144,16 @@ _COMMON_ATTRS = {
 
 vhdl_library = rule(
     implementation = _vhdl_library_impl,
-    attrs = dict(_COMMON_ATTRS.items() + {
-        "merge_work_lib": attr.bool(default = False),
-    }.items()),
+    attrs = dict(_COMMON_ATTRS,
+        merge_work_lib = attr.bool(default = False),
+    ),
 )
 
 vhdl_module = rule(
     implementation = _vhdl_module_impl,
-    attrs = dict(_COMMON_ATTRS.items() + {
-        "entity_name": attr.string(mandatory = True),
-        "generics": attr.string_dict(),
-        "library_name": attr.string(default = "work"),
-    }.items()),
+    attrs = dict(_COMMON_ATTRS,
+        entity_name = attr.string(mandatory = True),
+        generics = attr.string_dict(),
+        library_name = attr.string(default = "work"),
+    ),
 )
