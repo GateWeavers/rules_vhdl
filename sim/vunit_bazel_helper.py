@@ -28,13 +28,29 @@ def get_vunit_from_bazel():
         os.environ["VUNIT_NVC_PATH"] = binary_dir
 
     # Expand environment variables in arguments (e.g. $XML_OUTPUT_FILE)
-    args = [os.path.expandvars(a) for a in sys.argv]
+    arg = sys.argv[1:]
+    args = [os.path.expandvars(a) for a in arg]
     
     if "XML_OUTPUT_FILE" in os.environ and "--xunit-xml" not in args:
         args.extend(["--xunit-xml", os.environ["XML_OUTPUT_FILE"]])
 
+    print(args)
     vu = VUnit.from_argv(args)
+            
+    return vu
 
+def add_lib_from_bazel(vu):
+    config_path = os.environ.get("VUNIT_BAZEL_CONFIG")
+    if not config_path:
+        print("Error: VUNIT_BAZEL_CONFIG not set.")
+        sys.exit(1)
+        
+    if not os.path.exists(config_path):
+        config_path = os.path.join(os.getcwd(), config_path)
+
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
     for lib_name, files in config['libraries'].items():
         try:
             lib = vu.library(lib_name)
@@ -43,5 +59,4 @@ def get_vunit_from_bazel():
             
         for file_entry in files:
             lib.add_source_files(file_entry['file'], vhdl_standard=file_entry['version'])
-            
     return vu
