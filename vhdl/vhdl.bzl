@@ -1,5 +1,15 @@
+"""
+Core VHDL rules for rules_vhdl.
+
+This module provides rules for defining VHDL libraries and modules,
+managing transitive dependencies, and handling VHDL versioning.
+"""
+
 # Constants for VHDL versioning
-VhdlConfigInfo = provider(fields = ["value"])
+VhdlConfigInfo = provider(
+    doc = "Provider for VHDL configuration flags.",
+    fields = {"value": "The current value of the flag."}
+)
 
 def _flag_impl(ctx):
     return VhdlConfigInfo(value = ctx.build_setting_value)
@@ -7,11 +17,12 @@ def _flag_impl(ctx):
 vhdl_flag = rule(
     implementation = _flag_impl,
     build_setting = config.string(flag = True),
+    doc = "A string flag used to configure VHDL simulation parameters (e.g., simulator type, version).",
 )
 
 VHDL_VERSIONS = ["87", "93", "2008", "2019"]
 DEFAULT_VHDL_VERSION = "2008"
-RESERVED_LIB_NAMES = ["std","ieee"]
+RESERVED_LIB_NAMES = ["std", "ieee"]
 
 def _validate_library_name(name):
     if name.lower() in RESERVED_LIB_NAMES:
@@ -19,26 +30,37 @@ def _validate_library_name(name):
 
 # Provider for library management
 VhdlLibraryInfo = provider(
-    doc = "Provider containing VHDL library structures",
+    doc = "Provider containing VHDL library structures and their sources.",
     fields = {
-        "libraries": "A dictionary mapping 'lib_name@version' to a struct of library details"
+        "libraries": "A dictionary mapping 'lib_name@version' to a struct(sources, library_name, vhdl_version)."
     }
 )
 
 # Provider for specific VHDL module/entity details
 VhdlModuleInfo = provider(
-    doc = "Provider containing VHDL entity and generic information",
+    doc = "Provider containing VHDL entity and generic information.",
     fields = {
-        "entity_name": "The name of the VHDL entity",
-        "generics": "A dictionary of generic values",
-        "vhdl_version": "The VHDL version used by this module",
-        "dep_entities": "A depset of all entity names this module and its dependencies use"
+        "entity_name": "The name of the VHDL entity.",
+        "generics": "A dictionary of generic values.",
+        "vhdl_version": "The VHDL version used by this module.",
+        "dep_entities": "A depset of all entity names this module and its dependencies use."
     }
 )
 
 def _process_vhdl_libraries(ctx, srcs, library_name, vhdl_version, deps, merge_work_lib):
     """
-    Common logic to merge libraries and organize sources. Returns: A dictionary of library structures.
+    Common logic to merge libraries and organize sources.
+    
+    Args:
+        ctx: The rule context.
+        srcs: List of source files.
+        library_name: Target library name.
+        vhdl_version: VHDL standard version.
+        deps: Dependencies.
+        merge_work_lib: Whether to merge the 'work' library from dependencies.
+        
+    Returns:
+        A dictionary of library structures.
     """
     merged_sources_map = {}
 
@@ -98,7 +120,7 @@ def _vhdl_module_impl(ctx):
     """
     Implementation of the vhdl_module rule using common logic and transitive depset tracking.
     """
-    # 1. Process libraries
+
     _validate_library_name(ctx.attr.library_name)
     libs = _process_vhdl_libraries(
         ctx = ctx,
@@ -109,13 +131,11 @@ def _vhdl_module_impl(ctx):
         merge_work_lib = False
     )
 
-    # 2. Collect transitive entity names from dependencies
     transitive_entities = []
     for dep in ctx.attr.deps:
         if VhdlModuleInfo in dep:
             transitive_entities.append(dep[VhdlModuleInfo].dep_entities)
 
-    # Create depset with current entity + all transitive entities
     dep_entities_depset = depset(
         direct = [ctx.attr.entity_name],
         transitive = transitive_entities
@@ -147,13 +167,14 @@ vhdl_library = rule(
     attrs = dict(_COMMON_ATTRS,
         merge_work_lib = attr.bool(default = False),
     ),
+    doc = "Collects VHDL source files into a logical library.",
 )
 
 vhdl_module = rule(
     implementation = _vhdl_module_impl,
     attrs = dict(_COMMON_ATTRS,
-        entity_name = attr.string(mandatory = True),
+        entity_name = attr.string(mandatory = True,),
         generics = attr.string_dict(),
-        # library_name = attr.string(default = "work"),
     ),
+    doc = "Defines a VHDL entity with its generics and transitive dependencies.",
 )

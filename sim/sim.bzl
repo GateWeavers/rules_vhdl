@@ -1,3 +1,10 @@
+"""
+Rules for running VHDL simulations.
+
+This module provides rules and macros for executing VHDL testbenches using
+GHDL or NVC, as well as high-level VUnit integration.
+"""
+
 load("@rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
 load("@rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
@@ -118,4 +125,5 @@ vhdl_test = rule(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
         ),
     },
+    doc = "Runs a VHDL testbench using the resolved hermetic simulator.",
 )

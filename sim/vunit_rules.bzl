@@ -1,3 +1,10 @@
+"""
+VUnit-Bazel integration rules.
+
+This module provides rules for generating VUnit configuration and running
+VUnit simulations hermetically within Bazel.
+"""
+
 load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("@rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
 load("@rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
@@ -35,6 +42,7 @@ _vunit_runner_gen = rule(
     attrs = {
         "out": attr.output(mandatory = True),
     },
+    doc = "Generates a default Python runner script for VUnit.",
 )
 
 def _vunit_context_impl(ctx):
@@ -116,10 +124,28 @@ vunit_context = rule(
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
         ),
-    }
+    },
+    doc = "Gathers VHDL sources and generates a VUnit JSON configuration file.",
 )
 
 def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], main=None, **kwargs):
+    """
+    Macro to run a VUnit simulation.
+    
+    This macro creates a `vunit_context` to gather sources and a `py_test` to execute the simulation.
+    
+    Args:
+        name: Unique name for the test target.
+        dut: The VHDL library/module design under test.
+        srcs: Testbench source files.
+        tool_simulator: The simulator type ('ghdl' or 'nvc').
+        tool_version: Specific version constraint.
+        tool_backend: Specific backend constraint (GHDL only).
+        simulator: Explicit toolchain label override.
+        deps: Extra Python dependencies.
+        main: Optional custom runner script.
+        **kwargs: Standard Bazel test attributes (tags, size, timeout).
+    """
     context_name = name + "_ctx"
     runner_gen_name = name + "_gen_script"
     runner_file = name + "_runner.py"

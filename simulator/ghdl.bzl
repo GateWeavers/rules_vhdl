@@ -1,12 +1,19 @@
+"""
+GHDL toolchain rules and configuration transitions.
+
+This module manages the GHDL hermetic toolchain and provides the mechanism
+to transition simulator flags based on target attributes or explicit selection.
+"""
+
 load("@vhdl_toolchains//:registry.bzl", "TOOLCHAIN_REGISTRY", "DEFAULT_TOOLCHAIN")
 
 GhdlToolchainInfo = provider(
-    doc = "Provider for hermetic GHDL",
+    doc = "Provider for hermetic GHDL toolchain details.",
     fields = {
-        "ghdl_binary": "File: The executable",
-        "ghdl_files": "Depset: All files needed for GHDL",
-        "version": "String",
-        "backend": "String",
+        "ghdl_binary": "File: The GHDL executable.",
+        "ghdl_files": "Depset: All support files (libraries, prefixes) needed for GHDL execution.",
+        "version": "String: The tool version.",
+        "backend": "String: The backend type ('mcode' or 'llvm').",
     }
 )
 
@@ -45,9 +52,15 @@ ghdl_toolchain = rule(
         "version": attr.string(mandatory = True),
         "backend": attr.string(mandatory = True),
     },
+    doc = "Defines a GHDL hermetic toolchain.",
 )
 
 def _ghdl_transition_impl(settings, attr):
+    """
+    Implementation of the configuration transition for simulators.
+    
+    Sets the simulator flags based on rule attributes or explicit hub labels.
+    """
     # Default values
     simulator_type = "ghdl"
     version = "default"
