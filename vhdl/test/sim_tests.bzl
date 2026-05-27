@@ -37,6 +37,8 @@ def sim_test_suite(name):
         dut = ":test_lib",
         testbench_entity = "main",
         tool_simulator = "ghdl",
+        tool_version = "mock",
+        # simulator = "//simulator:mock_ghdl_toolchain",
         tags = ["manual"],
     )
 

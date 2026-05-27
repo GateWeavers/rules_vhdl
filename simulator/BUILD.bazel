@@ -12,6 +12,7 @@ constraint_setting(name = "backend")
 constraint_value(name = "v2_0_0", constraint_setting = ":version")
 constraint_value(name = "v3_0_0", constraint_setting = ":version")
 constraint_value(name = "v4_1_0", constraint_setting = ":version")
+constraint_value(name = "mock", constraint_setting = ":version")
 
 # Backends
 constraint_value(name = "mcode", constraint_setting = ":backend")
@@ -22,7 +23,7 @@ config_setting(
     name = "match_mock_ghdl",
     flag_values = {
         "//vhdl/config:simulator": "ghdl",
-        "//vhdl/config:version": "default",
+        "//vhdl/config:version": "mock",
         "//vhdl/config:backend": "default",
     },
 )
@@ -31,7 +32,7 @@ config_setting(
     name = "match_mock_nvc",
     flag_values = {
         "//vhdl/config:simulator": "nvc",
-        "//vhdl/config:version": "default",
+        "//vhdl/config:version": "mock",
     },
 )
 

@@ -44,6 +44,7 @@ def vunit_test_suite(name):
         dut = ":test_vunit_lib",
         srcs = ["main.vhd"],
         tool_simulator = "ghdl",
+        tool_version =  "mock",
         tags = ["manual"],
     )
 

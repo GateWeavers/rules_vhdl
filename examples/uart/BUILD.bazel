@@ -27,5 +27,5 @@ vunit_sim(
         "src/test/tb_uart_tx.vhd",
     ],
     dut = ":uart_lib",
-    main = "run_no_file.py",
+    main = "run_with_bazel.py",
 )

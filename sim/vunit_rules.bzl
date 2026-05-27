@@ -4,10 +4,17 @@ load("@rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
 # --- LE TEMPLATE PYTHON ---
 _RUNNER_TEMPLATE = """
-from sim.vunit_bazel_helper import get_vunit_from_bazel
+from sim.vunit_bazel_helper import get_vunit_from_bazel, add_lib_from_bazel
 
 def main():
     vu = get_vunit_from_bazel()
+    
+    vu.add_vhdl_builtins()
+    vu.add_osvvm()
+    vu.add_verification_components()
+    
+    add_lib_from_bazel(vu)
+    
     vu.main()
 
 if __name__ == "__main__":

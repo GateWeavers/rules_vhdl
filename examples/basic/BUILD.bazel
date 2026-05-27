@@ -22,6 +22,7 @@ vhdl_test(
     dut = ":lib",
     testbench_entity = "tb",
     tool_simulator = "nvc",
+    tool_version = "mock",
 )
 
 vhdl_test(

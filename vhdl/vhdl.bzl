@@ -11,7 +11,7 @@ vhdl_flag = rule(
 
 VHDL_VERSIONS = ["87", "93", "2008", "2019"]
 DEFAULT_VHDL_VERSION = "2008"
-RESERVED_LIB_NAMES = ["std", "ieee", "work"]
+RESERVED_LIB_NAMES = ["std","ieee"]
 
 def _validate_library_name(name):
     if name.lower() in RESERVED_LIB_NAMES:
@@ -137,7 +137,7 @@ def _vhdl_module_impl(ctx):
 # Common attributes to avoid repetition
 _COMMON_ATTRS = {
     "srcs": attr.label_list(allow_files = [".vhd"]),
-    "library_name": attr.string(mandatory = True),
+    "library_name": attr.string(default = "work"),
     "vhdl_version": attr.string(default = DEFAULT_VHDL_VERSION, values = VHDL_VERSIONS),
     "deps": attr.label_list(providers = [VhdlLibraryInfo]),
 }
@@ -154,6 +154,6 @@ vhdl_module = rule(
     attrs = dict(_COMMON_ATTRS,
         entity_name = attr.string(mandatory = True),
         generics = attr.string_dict(),
-        library_name = attr.string(default = "work"),
+        # library_name = attr.string(default = "work"),
     ),
 )
