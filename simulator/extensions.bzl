@@ -45,6 +45,29 @@ nvc_repository = repository_rule(
     },
 )
 
+def _local_nvc_repo_impl(ctx):
+    path = ctx.attr.path
+    # Handle workspace-relative paths
+    if not path.startswith("/"):
+        # Resolve path relative to the MODULE.bazel file (workspace root)
+        workspace_root = ctx.path(Label("@//:MODULE.bazel")).dirname
+        path = str(workspace_root.get_child(path))
+
+    # Symlink the local directory to 'nvc_home' inside the repository
+    ctx.symlink(path, "nvc_home")
+
+    ctx.file("BUILD", """
+package(default_visibility = ["//visibility:public"])
+filegroup(name = "bin", srcs = ["nvc_home/bin/nvc"])
+""")
+
+local_nvc_repository = repository_rule(
+    implementation = _local_nvc_repo_impl,
+    attrs = {
+        "path": attr.string(mandatory = True),
+    },
+)
+
 # ==============================================================================
 # 2. METADATA HUB REPOSITORY
 # ==============================================================================
@@ -271,6 +294,17 @@ _nvc_tag = tag_class(
     }
 )
 
+_nvc_local_tag = tag_class(
+    attrs = {
+        "name": attr.string(mandatory = True),
+        "version": attr.string(mandatory = True),
+        "path": attr.string(mandatory = True),
+        "os": attr.string(default = "linux"),
+        "arch": attr.string(default = "x86_64"),
+        "is_default": attr.bool(default = False),
+    }
+)
+
 # ==============================================================================
 # 4. IMPLEMENTATION DE L'EXTENSION
 # ==============================================================================
@@ -329,6 +363,25 @@ def _vhdl_extension_impl(ctx):
                 "arch": tool.arch,
             })
 
+        for tool in mod.tags.nvc_local:
+            if tool.is_default:
+                if default_toolchain:
+                    fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
+                default_toolchain = tool.name
+
+            local_nvc_repository(
+                name = tool.name,
+                path = tool.path,
+            )
+
+            tools.append({
+                "name": tool.name,
+                "type": "nvc",
+                "version": tool.version,
+                "os": tool.os,
+                "arch": tool.arch,
+            })
+
     vhdl_hub_repo(
         name = "vhdl_toolchains",
         tools_json = json.encode(tools),
@@ -340,5 +393,6 @@ vhdl_toolchains = module_extension(
     tag_classes = {
         "ghdl": _ghdl_tag,
         "nvc": _nvc_tag,
+        "nvc_local": _nvc_local_tag,
     },
 )

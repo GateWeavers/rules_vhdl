@@ -48,12 +48,10 @@ vhdl_toolchains.ghdl(
     strip_prefix = "ghdl-llvm-6.0.0-ubuntu24.04-x86_64",
 )
 
-# check the lazy fetch is working with a broken toolchain
-vhdl_toolchains.nvc(
-    name = "broken_nvc",
-    version = "9.9.9",
-    url = "https://example.com/nvc.tar.gz",
-    sha256 = "0000000000000000000000000000000000000000000000000000000000000000",
+vhdl_toolchains.nvc_local(
+    name = "local_nvc",
+    version = "1.12.1",
+    path = "../nvc/build",
 )
 
 use_repo(vhdl_toolchains, "vhdl_toolchains")
