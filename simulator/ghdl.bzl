@@ -47,10 +47,23 @@ def _ghdl_toolchain_impl(ctx):
 ghdl_toolchain = rule(
     implementation = _ghdl_toolchain_impl,
     attrs = {
-        "ghdl_binary": attr.label(allow_single_file = True, mandatory = True),
-        "ghdl_lib": attr.label_list(allow_files = True),
-        "version": attr.string(mandatory = True),
-        "backend": attr.string(mandatory = True),
+        "ghdl_binary": attr.label(
+            allow_single_file = True,
+            mandatory = True,
+            doc = "Label pointing to the GHDL executable.",
+        ),
+        "ghdl_lib": attr.label_list(
+            allow_files = True,
+            doc = "List of labels for GHDL support files/libraries.",
+        ),
+        "version": attr.string(
+            mandatory = True,
+            doc = "The version of this GHDL toolchain.",
+        ),
+        "backend": attr.string(
+            mandatory = True,
+            doc = "The GHDL backend ('mcode' or 'llvm').",
+        ),
     },
     doc = "Defines a GHDL hermetic toolchain.",
 )
@@ -91,25 +104,18 @@ def _ghdl_transition_impl(settings, attr):
                 # Direct repo access (backward compatibility or external)
                 selected_repo = repo_part
     
-    if not selected_repo and simulator_type == "ghdl" and version == "default" and backend == "default":
-        # Global resolution fallback (Bazel native)
-        pass
-
     if selected_repo:
         # Bzlmod repo names can be complex (e.g. @@vhdl_toolchains+ghdl_6_0_mcode), 
         # but the registry is keyed by the name provided in the extension.
         # We need to find the match in the registry keys.
-        match = None
-        for key in TOOLCHAIN_REGISTRY.keys():
-            if key == selected_repo or key in selected_repo:
-                match = key
-                break
 
-        if match:
-            config = TOOLCHAIN_REGISTRY[match]
-            simulator_type = config.simulator
-            version = config.version
-            backend = config.backend
+        for key in TOOLCHAIN_REGISTRY.keys():
+            if key in selected_repo:
+                config = TOOLCHAIN_REGISTRY[key]
+                simulator_type = config.simulator
+                version = config.version
+                backend = config.backend
+                break
 
     return {
         "@rules_vhdl//vhdl/config:simulator": simulator_type,

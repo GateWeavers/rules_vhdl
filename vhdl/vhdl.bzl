@@ -22,7 +22,7 @@ vhdl_flag = rule(
 
 VHDL_VERSIONS = ["87", "93", "2008", "2019"]
 DEFAULT_VHDL_VERSION = "2008"
-RESERVED_LIB_NAMES = ["std", "ieee"]
+RESERVED_LIB_NAMES = ["std","ieee"]
 
 def _validate_library_name(name):
     if name.lower() in RESERVED_LIB_NAMES:

@@ -110,16 +110,42 @@ vhdl_test = rule(
     cfg = vhdl_sim_config_transition,
     toolchains = ["@rules_vhdl//simulator:toolchain_type"],
     attrs = {
-        "srcs": attr.label_list(allow_files = [".vhd"], mandatory = True),
-        "dut": attr.label(providers = [VhdlLibraryInfo]),
-        "testbench_entity": attr.string(mandatory = True),
-        "vhdl_version": attr.string(default = "2008"),
-        "sim_args": attr.string_list(),
+        "srcs": attr.label_list(
+            allow_files = [".vhd"],
+            mandatory = True,
+            doc = "VHDL source files containing the testbench.",
+        ),
+        "dut": attr.label(
+            providers = [VhdlLibraryInfo],
+            doc = "The Design Under Test (library or module).",
+        ),
+        "testbench_entity": attr.string(
+            mandatory = True,
+            doc = "The name of the testbench entity to run.",
+        ),
+        "vhdl_version": attr.string(
+            default = "2008",
+            doc = "VHDL standard version for the testbench.",
+        ),
+        "sim_args": attr.string_list(
+            doc = "Extra command-line arguments for the simulator run command.",
+        ),
         
-        "tool_simulator": attr.string(default = "ghdl"),
-        "tool_version": attr.string(default = "default"),
-        "tool_backend": attr.string(default = "default"),
-        "simulator": attr.string(),
+        "tool_simulator": attr.string(
+            default = "ghdl",
+            doc = "Simulator type constraint ('ghdl' or 'nvc').",
+        ),
+        "tool_version": attr.string(
+            default = "default",
+            doc = "Simulator version constraint.",
+        ),
+        "tool_backend": attr.string(
+            default = "default",
+            doc = "GHDL backend constraint ('mcode' or 'llvm').",
+        ),
+        "simulator": attr.string(
+            doc = "Explicit simulator toolchain label (e.g. '@vhdl_toolchains//:ghdl_6_0_mcode').",
+        ),
         
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"

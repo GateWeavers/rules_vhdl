@@ -40,7 +40,10 @@ def _vunit_runner_gen_impl(ctx):
 _vunit_runner_gen = rule(
     implementation = _vunit_runner_gen_impl,
     attrs = {
-        "out": attr.output(mandatory = True),
+        "out": attr.output(
+            mandatory = True,
+            doc = "The output path for the generated Python runner script.",
+        ),
     },
     doc = "Generates a default Python runner script for VUnit.",
 )
@@ -115,12 +118,30 @@ vunit_context = rule(
     cfg = vhdl_sim_config_transition,
     toolchains = ["@rules_vhdl//simulator:toolchain_type"],
     attrs = {
-        "dut": attr.label(providers = [VhdlLibraryInfo], mandatory = True),
-        "srcs": attr.label_list(allow_files = True),
-        "tool_simulator": attr.string(default = "ghdl"),
-        "tool_version": attr.string(default = "default"),
-        "tool_backend": attr.string(default = "default"),
-        "simulator": attr.string(),
+        "dut": attr.label(
+            providers = [VhdlLibraryInfo],
+            mandatory = True,
+            doc = "The Design Under Test (library or module).",
+        ),
+        "srcs": attr.label_list(
+            allow_files = True,
+            doc = "Testbench source files.",
+        ),
+        "tool_simulator": attr.string(
+            default = "ghdl",
+            doc = "Simulator type constraint ('ghdl' or 'nvc').",
+        ),
+        "tool_version": attr.string(
+            default = "default",
+            doc = "Simulator version constraint.",
+        ),
+        "tool_backend": attr.string(
+            default = "default",
+            doc = "GHDL backend constraint ('mcode' or 'llvm').",
+        ),
+        "simulator": attr.string(
+            doc = "Explicit simulator toolchain label.",
+        ),
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
         ),

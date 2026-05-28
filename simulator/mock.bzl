@@ -1,3 +1,7 @@
+"""
+Mock toolchain rules for internal testing.
+"""
+
 load(":ghdl.bzl", "GhdlToolchainInfo")
 
 def _mock_ghdl_toolchain_impl(ctx):
@@ -15,16 +19,22 @@ def _mock_ghdl_toolchain_impl(ctx):
 mock_ghdl_toolchain = rule(
     implementation = _mock_ghdl_toolchain_impl,
     attrs = {
-        "ghdl_binary": attr.label(allow_single_file = True, mandatory = True),
+        "ghdl_binary": attr.label(
+            allow_single_file = True,
+            mandatory = True,
+            doc = "The mock executable file.",
+        ),
     },
+    doc = "Defines a mock GHDL toolchain for testing purposes.",
 )
 
-NvcToolchainInfo = provider(fields = ["nvc_binary", "version"])
+# Internal provider for mock NVC
+_MockNvcToolchainInfo = provider(fields = ["nvc_binary", "version"])
 
 def _mock_nvc_toolchain_impl(ctx):
     return [
         platform_common.ToolchainInfo(
-            nvc_info = NvcToolchainInfo(
+            nvc_info = _MockNvcToolchainInfo(
                 nvc_binary = ctx.file.nvc_binary,
                 version = "mock",
             )
@@ -34,6 +44,11 @@ def _mock_nvc_toolchain_impl(ctx):
 mock_nvc_toolchain = rule(
     implementation = _mock_nvc_toolchain_impl,
     attrs = {
-        "nvc_binary": attr.label(allow_single_file = True, mandatory = True),
+        "nvc_binary": attr.label(
+            allow_single_file = True,
+            mandatory = True,
+            doc = "The mock executable file.",
+        ),
     },
+    doc = "Defines a mock NVC toolchain for testing purposes.",
 )

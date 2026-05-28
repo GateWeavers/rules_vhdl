@@ -4,20 +4,6 @@ load(":mock.bzl", "mock_ghdl_toolchain", "mock_nvc_toolchain")
 
 toolchain_type(name ="toolchain_type")
 
-# --- Constraint Settings (Les catégories) ---
-constraint_setting(name = "version")
-constraint_setting(name = "backend")
-
-# Versions
-constraint_value(name = "v2_0_0", constraint_setting = ":version")
-constraint_value(name = "v3_0_0", constraint_setting = ":version")
-constraint_value(name = "v4_1_0", constraint_setting = ":version")
-constraint_value(name = "mock", constraint_setting = ":version")
-
-# Backends
-constraint_value(name = "mcode", constraint_setting = ":backend")
-constraint_value(name = "llvm",  constraint_setting = ":backend")
-
 # Mock matchers
 config_setting(
     name = "match_mock_ghdl",
