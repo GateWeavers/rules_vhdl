@@ -34,6 +34,7 @@ def _nvc_repo_impl(ctx):
     ctx.file("BUILD", """
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "bin", srcs = ["bin/nvc"])
+filegroup(name = "lib", srcs = glob(["lib/**"]))
 """)
 
 nvc_repository = repository_rule(
@@ -59,6 +60,7 @@ def _local_nvc_repo_impl(ctx):
     ctx.file("BUILD", """
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "bin", srcs = ["nvc_home/bin/nvc"])
+filegroup(name = "lib", srcs = glob(["nvc_home/lib/**"]))
 """)
 
 local_nvc_repository = repository_rule(
@@ -144,6 +146,7 @@ load("@rules_vhdl//simulator:nvc.bzl", "nvc_toolchain")
 nvc_toolchain(
     name = "{name}_impl",
     nvc_binary = "@{name}//:bin",
+    nvc_lib = ["@{name}//:lib"],
     version = "{version}",
 )
 

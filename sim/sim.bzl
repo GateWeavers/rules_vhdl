@@ -33,8 +33,7 @@ def _vhdl_test_impl(ctx):
     if is_ghdl:
         executable, bin_file, extra_files = _ghdl_sim_impl(ctx, toolchain.ghdl_info, dut_lib_info, tb_srcs)
     elif is_nvc:
-        executable, bin_file = _nvc_sim_impl(ctx, toolchain.nvc_info, dut_lib_info, tb_srcs)
-        extra_files = depset()
+        executable, bin_file, extra_files = _nvc_sim_impl(ctx, toolchain.nvc_info, dut_lib_info, tb_srcs)
     else:
         fail("Unknown toolchain type")
 
@@ -75,25 +74,38 @@ def _ghdl_sim_impl(ctx, info, dut_lib_info, tb_srcs):
 def _nvc_sim_impl(ctx, info, dut_lib_info, tb_srcs):
     nvc_bin = info.nvc_binary
     script_content = ["#!/bin/bash", "set -e"]
+
+    nvc_opts = []
+    if info.nvc_lib:
+        script_content.append("NVC_LIB_DIR=$(dirname " + nvc_bin.short_path + ")/../lib")
+        nvc_opts.append("-L $NVC_LIB_DIR")
     
+    # # Add the current directory to search path for locally compiled libraries
+    nvc_opts.append("-L .")
+
+    nvc_opts_str = " ".join(nvc_opts)
+
     for key, lib_info in dut_lib_info.libraries.items():
-        cmd = "{nvc} --std={std} --work={lib} -a {files}".format(
+        cmd = "{nvc} {opts} --std={std} --work={lib} -a {files}".format(
             nvc = nvc_bin.short_path,
+            opts = nvc_opts_str,
             std = lib_info.vhdl_version,
             lib = lib_info.library_name,
             files = " ".join([f.short_path for f in lib_info.sources.to_list()])
         )
         script_content.append(cmd)
 
-    script_content.append("{nvc} --std={std} -a {files}".format(
+    script_content.append("{nvc} {opts} --std={std} -a {files}".format(
         nvc = nvc_bin.short_path,
+        opts = nvc_opts_str,
         std = ctx.attr.vhdl_version,
         files = " ".join([f.short_path for f in tb_srcs])
     ))
     
     sim_args = " ".join(ctx.attr.sim_args)
-    script_content.append("{nvc} -e {entity} -r {args}".format(
+    script_content.append("{nvc} {opts} -e {entity} -r {args}".format(
         nvc = nvc_bin.short_path,
+        opts = nvc_opts_str,
         entity = ctx.attr.testbench_entity,
         args = sim_args
     ))
@@ -101,7 +113,7 @@ def _nvc_sim_impl(ctx, info, dut_lib_info, tb_srcs):
     executable = ctx.actions.declare_file(ctx.label.name)
     ctx.actions.write(output = executable, content = "\n".join(script_content), is_executable = True)
     
-    return executable, nvc_bin
+    return executable, nvc_bin, info.nvc_lib
 
 
 vhdl_test = rule(

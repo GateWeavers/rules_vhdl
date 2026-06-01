@@ -34,7 +34,6 @@ def get_vunit_from_bazel():
     if "XML_OUTPUT_FILE" in os.environ and "--xunit-xml" not in args:
         args.extend(["--xunit-xml", os.environ["XML_OUTPUT_FILE"]])
 
-    print(args)
     vu = VUnit.from_argv(args)
             
     return vu
@@ -60,3 +59,21 @@ def add_lib_from_bazel(vu):
         for file_entry in files:
             lib.add_source_files(file_entry['file'], vhdl_standard=file_entry['version'])
     return vu
+
+def set_nvc_options(vu):
+    config_path = os.environ.get("VUNIT_BAZEL_CONFIG")
+    if not config_path:
+        return
+
+    if not os.path.exists(config_path):
+        config_path = os.path.join(os.getcwd(), config_path)
+
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+
+    nvc_opts = []
+    if vu.get_simulator_name() == "nvc":
+        # nvc_opts.extend(["-L", os.path.abspath(library_path)])
+        lib_path = os.path.normpath(os.path.join(os.getenv("VUNIT_NVC_PATH") ,"../lib"))
+        vu.add_compile_option("nvc.global_flags",["-L"+lib_path])
+        vu.set_sim_option("nvc.global_flags",["-L"+lib_path])

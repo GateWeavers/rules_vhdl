@@ -11,7 +11,7 @@ load("@rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
 # --- LE TEMPLATE PYTHON ---
 _RUNNER_TEMPLATE = """
-from sim.vunit_bazel_helper import get_vunit_from_bazel, add_lib_from_bazel
+from sim.vunit_bazel_helper import get_vunit_from_bazel, add_lib_from_bazel, set_nvc_options
 
 def main():
     vu = get_vunit_from_bazel()
@@ -21,6 +21,8 @@ def main():
     vu.add_verification_components()
     
     add_lib_from_bazel(vu)
+    
+    set_nvc_options(vu)
     
     vu.main()
 
@@ -50,24 +52,24 @@ _vunit_runner_gen = rule(
 
 def _vunit_context_impl(ctx):
     toolchain = ctx.toolchains["@rules_vhdl//simulator:toolchain_type"]
-    sim_type = ctx.attr.tool_simulator
     
     binary_file = None
+    library_path = None
     extra_files = depset()
+    sim_type = ""
 
-    if sim_type == "ghdl":
-        if not hasattr(toolchain, "ghdl_info"):
-            fail("GHDL toolchain not found")
+    if hasattr(toolchain, "ghdl_info"):
+        sim_type = "ghdl"
         info = toolchain.ghdl_info
         binary_file = info.ghdl_binary
         extra_files = info.ghdl_files
-    elif sim_type == "nvc":
-        if not hasattr(toolchain, "nvc_info"):
-            fail("NVC toolchain not found")
+    elif hasattr(toolchain, "nvc_info"):
+        sim_type = "nvc"
         info = toolchain.nvc_info
         binary_file = info.nvc_binary
+        extra_files = info.nvc_lib
     else:
-        fail("Unsupported simulator: " + sim_type)
+        fail("Unknown toolchain type")
     
     libraries_config = {}
     transitive_srcs = []
