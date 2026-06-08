@@ -1,0 +1,40 @@
+module(name = "rules_vhdl_e2e")
+
+bazel_dep(name = "rules_vhdl")
+local_path_override(
+    module_name = "rules_vhdl",
+    path = "../..",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "aspect_rules_py", version = "1.11.5")
+
+interpreters = use_extension("@aspect_rules_py//py/unstable:extension.bzl", "python_interpreters")
+interpreters.toolchain(python_version = "3.12", is_default = True)
+use_repo(interpreters, "python_interpreters")
+register_toolchains("@python_interpreters//:all")
+
+uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin")
+uv_bin.toolchain(version = "0.11.6")
+use_repo(uv_bin, "uv")
+
+uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
+uv.declare_hub(hub_name = "pypi")
+uv.project(
+    hub_name = "pypi",
+    lock = "//:uv.lock",
+    pyproject = "//:pyproject.toml",
+    # Build tools injected for sdist packages that need them (e.g. maturin, setuptools)
+    default_build_dependencies = ["build", "setuptools"],
+)
+use_repo(uv, "pypi")
+
+register_toolchains("@uv//:all")
+
+vhdl_toolchains = use_extension("@rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+use_repo(vhdl_toolchains, "vhdl_toolchains")
+
+register_toolchains(
+    "@vhdl_toolchains//:all",
+)

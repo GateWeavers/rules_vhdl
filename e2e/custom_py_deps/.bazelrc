@@ -1,0 +1,7 @@
+# e2e bazelrc
+build --symlink_prefix=bazel-build/
+test --test_output=errors
+common --incompatible_strict_action_env
+
+# Config for e2e workspace
+common --@pypi//venv=custom-py-deps-e2e
