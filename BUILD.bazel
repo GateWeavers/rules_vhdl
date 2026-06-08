@@ -1,0 +1,17 @@
+load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
+
+# gazelle:prefix rules_vhdl
+
+gazelle_binary(
+    name = "gazelle_vhdl_binary",
+    languages = [
+        "@gazelle//language/go",
+        "//tooling/gazelle/vhdl",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+gazelle(
+    name = "gazelle",
+    gazelle = ":gazelle_vhdl_binary",
+)

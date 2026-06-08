@@ -1,0 +1,13 @@
+load("@rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
+
+# gazelle:vhdl_library_name uart_lib
+
+vhdl_library(
+    name = "uart_lib",
+    srcs = [
+        "uart_rx.vhd",
+        "uart_tx.vhd",
+    ],
+    library_name = "uart_lib",
+    visibility = ["//visibility:public"],
+)

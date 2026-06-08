@@ -7,4 +7,4 @@ py_library(
     deps = ["@pypi//vunit_hdl"],
 )
 
-toolchain_type(name ="toolchain_type")
+toolchain_type(name = "toolchain_type")

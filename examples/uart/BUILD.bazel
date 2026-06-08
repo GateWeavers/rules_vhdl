@@ -1,5 +1,5 @@
-load("//vhdl:vhdl.bzl", "vhdl_library")
 load("//sim:vunit_rules.bzl", "vunit_sim")
+load("//vhdl:vhdl.bzl", "vhdl_library")
 
 vhdl_library(
     name = "uart_lib",

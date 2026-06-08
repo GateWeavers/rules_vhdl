@@ -1,6 +1,6 @@
-load("//vhdl:vhdl.bzl", "vhdl_library")
 load("//sim:sim.bzl", "vhdl_test")
 load("//sim:vunit_rules.bzl", "vunit_sim")
+load("//vhdl:vhdl.bzl", "vhdl_library")
 
 vhdl_library(
     name = "lib",
@@ -30,20 +30,20 @@ vhdl_test(
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
     testbench_entity = "tb",
+    tool_backend = "mcode",
     tool_simulator = "ghdl",
     tool_version = "6.0",
-    tool_backend = "mcode",
 )
 
 vhdl_test(
     name = "tb_ghdl_6_0_llvm",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
+    tags = ["manual"],
     testbench_entity = "tb",
+    tool_backend = "llvm",
     tool_simulator = "ghdl",
     tool_version = "6.0",
-    tool_backend = "llvm",
-    tags = ["manual"],
 )
 
 vhdl_test(
@@ -59,17 +59,17 @@ vhdl_test(
     name = "tb_nvc_local_easy",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
-    testbench_entity = "tb",
     simulator = "@vhdl_toolchains//:local_nvc",
+    testbench_entity = "tb",
 )
 
 vunit_sim(
     name = "tb_vunit",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
+    tool_backend = "mcode",
     tool_simulator = "ghdl",
     tool_version = "6.0",
-    tool_backend = "mcode",
 )
 
 vunit_sim(
@@ -89,8 +89,8 @@ vhdl_test(
     name = "tb_ghdl_easy",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
-    testbench_entity = "tb",
     simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+    testbench_entity = "tb",
 )
 
 vunit_sim(

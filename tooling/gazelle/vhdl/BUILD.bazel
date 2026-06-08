@@ -1,0 +1,20 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "vhdl",
+    srcs = [
+        "lang.go",
+        "resolver.go",
+        "scanner.go",
+    ],
+    importpath = "rules_vhdl/tooling/gazelle/vhdl",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gazelle//config",
+        "@gazelle//label",
+        "@gazelle//language",
+        "@gazelle//repo",
+        "@gazelle//resolve",
+        "@gazelle//rule",
+    ],
+)

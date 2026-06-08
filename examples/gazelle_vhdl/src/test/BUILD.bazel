@@ -1,0 +1,15 @@
+load("@rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
+
+vunit_sim(
+    name = "tb_uart_rx",
+    srcs = ["tb_uart_rx.vhd"],
+    dut = "//examples/gazelle_vhdl/src:uart_lib",
+    visibility = ["//visibility:public"],
+)
+
+vunit_sim(
+    name = "tb_uart_tx",
+    srcs = ["tb_uart_tx.vhd"],
+    dut = "//examples/gazelle_vhdl/src:uart_lib",
+    visibility = ["//visibility:public"],
+)
