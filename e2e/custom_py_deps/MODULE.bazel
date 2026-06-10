@@ -1,8 +1,8 @@
-module(name = "rules_vhdl_e2e")
+module(name = "gateweaver_rules_vhdl_e2e")
 
-bazel_dep(name = "rules_vhdl")
+bazel_dep(name = "gateweaver_rules_vhdl")
 local_path_override(
-    module_name = "rules_vhdl",
+    module_name = "gateweaver_rules_vhdl",
     path = "../..",
 )
 
@@ -32,7 +32,7 @@ use_repo(uv, "pypi")
 
 register_toolchains("@uv//:all")
 
-vhdl_toolchains = use_extension("@rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
 register_toolchains(

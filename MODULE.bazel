@@ -1,17 +1,16 @@
-module(name = "rules_vhdl", version = "0.0.0")
+module(name = "gateweaver_rules_vhdl", version = "0.0.0")
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_shell", version = "0.3.0")
-bazel_dep(name = "rules_go", version = "0.59.0")
-bazel_dep(name = "gazelle", version = "0.41.0")
-# bazel_dep(name = "rules_python", version = "2.0.1")
 bazel_dep(name = "aspect_rules_py", version = "1.11.5")
+bazel_dep(name = "rules_go", version = "0.59.0",dev_dependency = True)
+bazel_dep(name = "gazelle", version = "0.41.0",dev_dependency = True)
 
-go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk",dev_dependency = True)
 go_sdk.download(version = "1.22.0")
 
-go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps",dev_dependency = True)
 go_deps.from_file(go_mod = "//:go.mod")
 use_repo(go_deps, "com_github_bazelbuild_buildtools")
 
@@ -20,11 +19,11 @@ interpreters.toolchain(python_version = "3.12", is_default = True)
 use_repo(interpreters, "python_interpreters")
 register_toolchains("@python_interpreters//:all")
 
-uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin")
+uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin",dev_dependency = True)
 uv_bin.toolchain(version = "0.11.6")
 use_repo(uv_bin, "uv")
 
-uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
+uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv",dev_dependency = True)
 uv.declare_hub(
     hub_name = "pypi",      # Or whatever you wish
 )

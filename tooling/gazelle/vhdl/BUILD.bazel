@@ -7,7 +7,7 @@ go_library(
         "resolver.go",
         "scanner.go",
     ],
-    importpath = "rules_vhdl/tooling/gazelle/vhdl",
+    importpath = "gateweaver_rules_vhdl/tooling/gazelle/vhdl",
     visibility = ["//visibility:public"],
     deps = [
         "@gazelle//config",

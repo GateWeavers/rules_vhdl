@@ -76,4 +76,4 @@ common --incompatible_strict_action_env
 
 # build --experimental_platform_in_output_dir
 
-common --@pypi//venv=rules_vhdl
+common --@pypi//venv=gateweaver_rules_vhdl

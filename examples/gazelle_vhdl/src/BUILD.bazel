@@ -1,4 +1,4 @@
-load("@rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
+load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
 
 # gazelle:vhdl_library_name uart_lib
 

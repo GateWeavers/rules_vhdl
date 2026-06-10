@@ -65,17 +65,17 @@ def _ghdl_transition_impl(settings, attr):
             backend = config.backend
 
     return {
-        "@rules_vhdl//vhdl/config:simulator": simulator_type,
-        "@rules_vhdl//vhdl/config:version": version,
-        "@rules_vhdl//vhdl/config:backend": backend,
+        "@gateweaver_rules_vhdl//vhdl/config:simulator": simulator_type,
+        "@gateweaver_rules_vhdl//vhdl/config:version": version,
+        "@gateweaver_rules_vhdl//vhdl/config:backend": backend,
     }
 
 vhdl_sim_config_transition = transition(
     implementation = _ghdl_transition_impl,
     inputs = [],
     outputs = [
-        "@rules_vhdl//vhdl/config:simulator",
-        "@rules_vhdl//vhdl/config:version",
-        "@rules_vhdl//vhdl/config:backend",
+        "@gateweaver_rules_vhdl//vhdl/config:simulator",
+        "@gateweaver_rules_vhdl//vhdl/config:version",
+        "@gateweaver_rules_vhdl//vhdl/config:backend",
     ],
 )

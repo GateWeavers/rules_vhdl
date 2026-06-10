@@ -1,4 +1,4 @@
-load("@rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
+load("@gateweaver_rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
 
 vunit_sim(
     name = "tb_uart_rx",

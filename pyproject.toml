@@ -1,5 +1,5 @@
 [project]
-name = "rules_vhdl"
+name = "gateweaver_rules_vhdl"
 classifiers = ["Private :: Do Not Upload"]
 version = "0"
 requires-python = ">= 3.12"

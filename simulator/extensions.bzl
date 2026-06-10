@@ -80,18 +80,18 @@ package(default_visibility = ["//visibility:public"])
 # Matchers pour les valeurs par défaut
 config_setting(
     name = "match_version_default",
-    flag_values = {"@rules_vhdl//vhdl/config:version": "default"},
+    flag_values = {"@gateweaver_rules_vhdl//vhdl/config:version": "default"},
 )
 
 config_setting(
     name = "match_backend_default",
-    flag_values = {"@rules_vhdl//vhdl/config:backend": "default"},
+    flag_values = {"@gateweaver_rules_vhdl//vhdl/config:backend": "default"},
 )
 """
 
 _GHDL_TC_TEMPLATE = """
 # --- Toolchain: {name} (GHDL) ---
-load("@rules_vhdl//simulator:ghdl.bzl", "ghdl_toolchain")
+load("@gateweaver_rules_vhdl//simulator:ghdl.bzl", "ghdl_toolchain")
 
 ghdl_toolchain(
     name = "{name}_impl",
@@ -103,23 +103,23 @@ ghdl_toolchain(
 
 config_setting(
     name = "{name}_match_version",
-    flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
+    flag_values = {{"@gateweaver_rules_vhdl//vhdl/config:version": "{version}"}},
 )
 
 config_setting(
     name = "{name}_match_simulator",
-    flag_values = {{"@rules_vhdl//vhdl/config:simulator": "ghdl"}},
+    flag_values = {{"@gateweaver_rules_vhdl//vhdl/config:simulator": "ghdl"}},
 )
 
 config_setting(
     name = "{name}_match_backend",
-    flag_values = {{"@rules_vhdl//vhdl/config:backend": "{backend}"}},
+    flag_values = {{"@gateweaver_rules_vhdl//vhdl/config:backend": "{backend}"}},
 )
 
 toolchain(
     name = "{name}_toolchain",
     toolchain = ":{name}_impl",
-    toolchain_type = "@rules_vhdl//simulator:toolchain_type",
+    toolchain_type = "@gateweaver_rules_vhdl//simulator:toolchain_type",
     target_settings = [
         ":{name}_match_simulator",
         ":{name}_match_version",
@@ -141,7 +141,7 @@ alias(
 
 _NVC_TC_TEMPLATE = """
 # --- Toolchain: {name} (NVC) ---
-load("@rules_vhdl//simulator:nvc.bzl", "nvc_toolchain")
+load("@gateweaver_rules_vhdl//simulator:nvc.bzl", "nvc_toolchain")
 
 nvc_toolchain(
     name = "{name}_impl",
@@ -152,18 +152,18 @@ nvc_toolchain(
 
 config_setting(
     name = "{name}_match_version",
-    flag_values = {{"@rules_vhdl//vhdl/config:version": "{version}"}},
+    flag_values = {{"@gateweaver_rules_vhdl//vhdl/config:version": "{version}"}},
 )
 
 config_setting(
     name = "{name}_match_simulator",
-    flag_values = {{"@rules_vhdl//vhdl/config:simulator": "nvc"}},
+    flag_values = {{"@gateweaver_rules_vhdl//vhdl/config:simulator": "nvc"}},
 )
 
 toolchain(
     name = "{name}_toolchain",
     toolchain = ":{name}_impl",
-    toolchain_type = "@rules_vhdl//simulator:toolchain_type",
+    toolchain_type = "@gateweaver_rules_vhdl//simulator:toolchain_type",
     target_settings = [
         ":{name}_match_simulator",
         ":{name}_match_version",
@@ -204,7 +204,7 @@ def _vhdl_hub_repo_impl(ctx):
 toolchain(
     name = "{name}_default_toolchain",
     toolchain = ":{name}_impl",
-    toolchain_type = "@rules_vhdl//simulator:toolchain_type",
+    toolchain_type = "@gateweaver_rules_vhdl//simulator:toolchain_type",
     target_settings = [
         ":{name}_match_simulator",
         ":match_version_default",
@@ -232,7 +232,7 @@ toolchain(
 toolchain(
     name = "{name}_default_toolchain",
     toolchain = ":{name}_impl",
-    toolchain_type = "@rules_vhdl//simulator:toolchain_type",
+    toolchain_type = "@gateweaver_rules_vhdl//simulator:toolchain_type",
     target_settings = [
         ":{name}_match_simulator",
         ":match_version_default",
@@ -389,6 +389,10 @@ def _vhdl_extension_impl(ctx):
         name = "vhdl_toolchains",
         tools_json = json.encode(tools),
         default_toolchain = default_toolchain,
+    )
+
+    return ctx.extension_metadata(
+        reproducible = True,
     )
 
 vhdl_toolchains = module_extension(

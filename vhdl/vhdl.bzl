@@ -1,5 +1,6 @@
 """
-Core VHDL rules for rules_vhdl.
+# Core VHDL rules for gateweaver_rules_vhdl.
+
 
 This module provides rules for defining VHDL libraries and modules,
 managing transitive dependencies, and handling VHDL versioning.

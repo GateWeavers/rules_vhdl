@@ -44,7 +44,7 @@ wheels = [
 ]
 
 [[package]]
-name = "rules-vhdl"
+name = "gateweaver-rules-vhdl"
 version = "0"
 source = { virtual = "." }
 dependencies = [
