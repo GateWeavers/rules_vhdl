@@ -4,7 +4,6 @@ py_library(
     name = "vunit_bazel_helper",
     srcs = ["vunit_bazel_helper.py"],
     visibility = ["//visibility:public"],
-    deps = ["@pypi//vunit_hdl"],
 )
 
 toolchain_type(name = "toolchain_type")

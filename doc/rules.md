@@ -76,6 +76,8 @@ Manages hermetic installations of VHDL simulators (GHDL, NVC).
 To register toolchains, use the `vhdl_toolchains` hub repo. Here is a complete `MODULE.bazel` example:
 
 ```python
+bazel_dep(name = "gateweaver_rules_vhdl", version = "0.1.0")
+
 # Use the toolchain extension
 vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 

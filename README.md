@@ -21,13 +21,7 @@ Add the following to your `MODULE.bazel` file:
 ```starlark
 bazel_dep(name = "gateweaver_rules_vhdl", version = "0.1.0")
 
-# Configure Hermetic Python (required for VUnit)
-bazel_dep(name = "aspect_rules_py", version = "1.11.5")
-interpreters = use_extension("@aspect_rules_py//py/unstable:extension.bzl", "python_interpreters")
-interpreters.toolchain(python_version = "3.12", is_default = True)
-use_repo(interpreters, "python_interpreters")
-
-# Register VHDL Toolchains
+# Register VHDL Toolchains (Hermetic Simulators)
 vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 
 # Define a GHDL toolchain (mcode backend)
@@ -41,16 +35,38 @@ vhdl_toolchains.ghdl(
     is_default = True,
 )
 
-# Define an NVC toolchain
-vhdl_toolchains.nvc(
-    name = "nvc_1_12",
-    version = "1.12.1",
-    url = "https://github.com/nickg/nvc/releases/download/r1.12.1/nvc-1.12.1-x86_64.tar.gz",
-    sha256 = "...", # Replace with actual hash
-)
-
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 register_toolchains("@vhdl_toolchains//:all")
+```
+
+### Opt-in for VUnit Support
+
+If you want to use `vunit_sim`, you must also configure a hermetic Python environment in your `MODULE.bazel`. You can reuse the versions and lockfile provided by the ruleset for a zero-configuration experience:
+
+```starlark
+bazel_dep(name = "aspect_rules_py", version = "1.11.5")
+
+# 1. Configure Python Interpreter
+interpreters = use_extension("@aspect_rules_py//py/unstable:extension.bzl", "python_interpreters")
+interpreters.toolchain(python_version = "3.12", is_default = True)
+use_repo(interpreters, "python_interpreters")
+register_toolchains("@python_interpreters//:all")
+
+# 2. Configure UV toolchain
+uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin")
+uv_bin.toolchain(version = "0.11.6")
+use_repo(uv_bin, "uv")
+register_toolchains("@uv//:all")
+
+# 3. Define the hub linking to ruleset's lockfile
+uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
+uv.declare_hub(hub_name = "pypi")
+uv.project(
+    hub_name = "pypi",
+    lock = "@gateweaver_rules_vhdl//:uv.lock",
+    pyproject = "@gateweaver_rules_vhdl//:pyproject.toml",
+)
+use_repo(uv, "pypi")
 ```
 
 ---
