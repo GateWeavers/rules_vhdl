@@ -155,7 +155,7 @@ vunit_sim(
 
 ---
 
-## Automation with Gazelle
+## Automation with Gazelle (Experimental)
 
 `gateweaver_rules_vhdl` includes a Gazelle extension that automates the creation of `vhdl_library` and `vunit_sim` rules.
 
@@ -179,6 +179,11 @@ gazelle(
     gazelle = ":gazelle_vhdl_binary",
 )
 ```
+In your root `MODULE.bazel`:
+
+```starlark
+
+```
 
 ### Execution
 
@@ -192,6 +197,60 @@ The extension will scan your `.vhd` files, identify entities/testbenches, and up
 
 - `# gazelle:vhdl_enabled false`: Disable VHDL scanning for a specific directory.
 - `# gazelle:vhdl_library_name custom_name`: Override the default VHDL library name for a directory.
+
+---
+
+## Examples & Use Cases
+
+The following examples demonstrate common patterns. You can find complete code for these in the `e2e/` directory.
+
+### 1. Minimal (Standard VHDL Test)
+Ideal for simple designs not requiring VUnit.
+- **Rules**: `vhdl_library`, `vhdl_test`.
+- **Location**: `e2e/minimal_example`
+
+```starlark
+vhdl_library(
+    name = "lib",
+    srcs = ["vhdl/lib.vhd"],
+    library_name = "work",
+)
+
+vhdl_test(
+    name = "tb_ghdl",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    testbench_entity = "tb",
+)
+```
+
+### 2. VUnit with Custom Runner
+Demonstrates co-simulation with custom Python logic.
+- **Rules**: `vunit_sim`.
+- **Location**: `e2e/simple_example`
+
+```python
+vunit_sim(
+    name = "tb_vunit_custom",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    main = "custom_runner.py", # Custom Python runner
+)
+```
+
+### 3. VUnit with External Python Deps
+Use libraries like `crc`, `numpy`, or `scipy` in your testbench.
+- **Location**: `e2e/custom_py_deps`
+
+```python
+vunit_sim(
+    name = "tb_custom_deps",
+    srcs = ["vhdl/tb.vhd"],
+    dut = ":lib",
+    main = "custom_runner.py",
+    deps = ["@pypi//crc"], # External Python library
+)
+```
 
 ---
 

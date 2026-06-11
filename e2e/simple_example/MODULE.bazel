@@ -6,8 +6,6 @@ local_path_override(
     path = "../..",
 )
 
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "aspect_rules_py", version = "1.11.5")
 
 interpreters = use_extension("@aspect_rules_py//py/unstable:extension.bzl", "python_interpreters")
@@ -15,17 +13,21 @@ interpreters.toolchain(python_version = "3.12", is_default = True)
 use_repo(interpreters, "python_interpreters")
 register_toolchains("@python_interpreters//:all")
 
-uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin")
-uv_bin.toolchain(version = "0.11.6")
-use_repo(uv_bin, "uv")
-
 uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
 use_repo(uv, "pypi")
 
-register_toolchains("@uv//:all")
-
 vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 use_repo(vhdl_toolchains, "vhdl_toolchains")
+
+vhdl_toolchains.ghdl(
+    name = "local_ghdl_6_0_mcode",
+    version = "6.0",
+    backend = "mcode",
+    url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz",
+    sha256 = "30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7",
+    strip_prefix = "ghdl-mcode-6.0.0-ubuntu24.04-x86_64",
+    # is_default = True,
+)
 
 register_toolchains(
     "@vhdl_toolchains//:all",
