@@ -2,7 +2,7 @@
 
 Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.build).
 
-`gateweaver_rules_vhdl` provides a robust infrastructure for VHDL development, integrating standard simulators (GHDL, NVC) with the [VUnit](https://vunit.github.io/) verification framework. It leverages `aspect_rules_py` for a fully hermetic Python environment and includes a custom Gazelle extension for automated `BUILD.bazel` generation.
+`gateweaver_rules_vhdl` provides a robust infrastructure for VHDL development, integrating standard simulators (GHDL, NVC) with the [VUnit](https://vunit.github.io/) verification framework. It leverages `aspect_rules_py` for a fully hermetic Python environment.
 
 ## Key Features
 
@@ -52,13 +52,7 @@ interpreters.toolchain(python_version = "3.12", is_default = True)
 use_repo(interpreters, "python_interpreters")
 register_toolchains("@python_interpreters//:all")
 
-# 2. Configure UV toolchain
-uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin")
-uv_bin.toolchain(version = "0.11.6")
-use_repo(uv_bin, "uv")
-register_toolchains("@uv//:all")
-
-# 3. Define the hub linking to ruleset's lockfile
+# 2. Define the hub linking to ruleset's lockfile
 uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
 uv.declare_hub(hub_name = "pypi")
 uv.project(
@@ -67,6 +61,10 @@ uv.project(
     pyproject = "@gateweaver_rules_vhdl//:pyproject.toml",
 )
 use_repo(uv, "pypi")
+```
+# 3. setup the default venv in your .bazelrc
+```text
+common --@pypi//venv=common --@pypi//venv=gateweaver_rules_vhdl
 ```
 
 ---
@@ -142,15 +140,23 @@ dependencies = [
 
 **2. Configure `MODULE.bazel`**
 ```starlark
+
+uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin")
+uv_bin.toolchain(version = "0.11.6")
+use_repo(uv_bin, "uv")
+register_toolchains("@uv//:all")
+
 uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
 uv.declare_hub(hub_name = "pypi")
 uv.project(
     hub_name = "pypi",
     pyproject = "//:pyproject.toml",
-    lock = "//:uv.lock", # Optional but recommended
+    lock = "//:uv.lock",
 )
 use_repo(uv, "pypi")
 ```
+
+The lock file can be generated with `bazel run @uv -- lock`.
 
 **3. Update `.bazelrc`**
 Inform Bazel which venv to use by default:
@@ -198,7 +204,8 @@ gazelle(
 In your root `MODULE.bazel`:
 
 ```starlark
-
+bazel_dep(name = "rules_go", version = "0.59.0")
+bazel_dep(name = "gazelle", version = "0.41.0")
 ```
 
 ### Execution

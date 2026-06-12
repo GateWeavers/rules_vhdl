@@ -33,7 +33,7 @@ vhdl_test(
     tool_simulator = "ghdl",
     tool_version = "6.0",
     tool_backend = "llvm",
-    tags = ["manual"],
+    # tags = ["manual"],
 )
 
 vhdl_test(

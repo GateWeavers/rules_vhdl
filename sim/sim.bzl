@@ -45,7 +45,7 @@ def _ghdl_sim_impl(ctx, info, dut_lib_info, tb_srcs):
     ghdl_bin = info.ghdl_binary
     script_content = ["#!/bin/bash", "set -e"]
     
-    script_content.append("export GHDL_PREFIX=$(dirname " + ghdl_bin.short_path + ")/../lib/ghdl")
+    # script_content.append("export GHDL_PREFIX=$(dirname " + ghdl_bin.short_path + ")/../lib/ghdl")
 
     for key, lib_info in dut_lib_info.libraries.items():
         cmd = "{ghdl} -a --std={std} --work={lib} {files}".format(
@@ -62,6 +62,9 @@ def _ghdl_sim_impl(ctx, info, dut_lib_info, tb_srcs):
     ))
     
     sim_args = " ".join(ctx.attr.sim_args)
+    script_content.append("{ghdl} -e {opts} {entity}".format(
+        ghdl = ghdl_bin.short_path, opts = tb_opts, entity = ctx.attr.testbench_entity,
+    ))
     script_content.append("{ghdl} -r {opts} {entity} {args}".format(
         ghdl = ghdl_bin.short_path, opts = tb_opts, entity = ctx.attr.testbench_entity, args = sim_args
     ))

@@ -13,7 +13,7 @@ def _ghdl_repo_impl(ctx):
     ctx.file("BUILD", """
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "bin", srcs = ["bin/ghdl"])
-filegroup(name = "lib", srcs = glob(["lib/**"]))
+filegroup(name = "lib", srcs = glob(["lib/**","bin/**"]))
 """)
 
 ghdl_repository = repository_rule(
