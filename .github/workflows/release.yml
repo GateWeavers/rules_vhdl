@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "The tag to release/publish"
+        required: true
+      publish_to_bcr:
+        description: "Whether to publish to BCR"
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create archive
+        run: |
+          TAG_NAME=${{ github.event.release.tag_name || inputs.tag_name }}
+          git archive --format=tar.gz --prefix=gateweaver_rules_vhdl-${TAG_NAME#v}/ -o gateweaver_rules_vhdl-${TAG_NAME#v}.tar.gz ${TAG_NAME}
+          sha256sum gateweaver_rules_vhdl-${TAG_NAME#v}.tar.gz > gateweaver_rules_vhdl-${TAG_NAME#v}.tar.gz.sha256
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            gateweaver_rules_vhdl-${{ github.event.release.tag_name || inputs.tag_name }}.tar.gz
+            gateweaver_rules_vhdl-${{ github.event.release.tag_name || inputs.tag_name }}.tar.gz.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish_bcr:
+    needs: release
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_bcr == true
+    permissions:
+      contents: read
+    uses: bazel-contrib/publish-to-bcr/.github/workflows/publish.yaml@v3
+    with:
+      tag_name: ${{ github.event.release.tag_name || inputs.tag_name }}
+    secrets:
+      publish_token: ${{ secrets.BCR_PUBLISH_TOKEN }}

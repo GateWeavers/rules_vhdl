@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mount bazel cache
+        uses: actions/cache@v4
+        with:
+          path: "~/.cache/bazel"
+          key: bazel-cache-${{ runner.os }}-${{ hashFiles('**/BUILD.bazel', '**/MODULE.bazel', '**/WORKSPACE.bazel') }}
+          restore-keys: |
+            bazel-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtinfo5
+
+      - name: Test main repo
+        run: bazel test //...
+
+      - name: Test e2e/minimal_example
+        working-directory: e2e/minimal_example
+        run: bazel test //...
+
+      - name: Test e2e/simple_example
+        working-directory: e2e/simple_example
+        run: bazel test //...
+
+      - name: Test e2e/custom_py_deps
+        working-directory: e2e/custom_py_deps
+        run: bazel test //...
