@@ -1,9 +1,18 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 
+exports_files(["cocotb_bazel_helper.py"])
+
 py_library(
     name = "vunit_bazel_helper",
     srcs = ["vunit_bazel_helper.py"],
     visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "cocotb_bazel_helper",
+    srcs = ["cocotb_bazel_helper.py"],
+    visibility = ["//visibility:public"],
+    deps = ["@pypi//cocotb"],
 )
 
 toolchain_type(name = "toolchain_type")

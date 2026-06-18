@@ -8,6 +8,7 @@ Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.
 
 - **Hermetic Toolchains**: Automatic fetching and isolation of simulators (GHDL/NVC). No manual installation required.
 - **VUnit Integration**: Native support for VUnit testbenches and custom Python runners.
+- **Cocotb 2.0 Support**: Modern Python-based verification using the new `cocotb_tools` runner API.
 - **Automated Build Generation**: Custom Gazelle extension that scans VHDL source code to generate and update Bazel rules automatically.
 - **Bzlmod Ready**: Modern Bazel dependency management out of the box.
 - **Advanced Python Support**: Easily add custom Python libraries (like `crc`, `numpy`) to your simulation environment.
@@ -114,9 +115,23 @@ vunit_sim(
 )
 ```
 
+### 4. Running a Cocotb Simulation
+
+```starlark
+load("@gateweaver_rules_vhdl//sim:cocotb_rules.bzl", "cocotb_sim")
+
+cocotb_sim(
+    name = "tb_dff",
+    dut = ":dff_lib",
+    hdl_toplevel = "dff",     # HDL top-level entity
+    test_module = "test_dff", # Python test module (test_dff.py)
+    srcs = ["test_dff.py"],
+)
+```
+
 Run the test:
 ```bash
-bazel test //path/to:tb_uart
+bazel test //path/to:tb_dff
 ```
 
 To run with a GUI (GTKWave), use:

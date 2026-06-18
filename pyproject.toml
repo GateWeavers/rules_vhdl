@@ -11,8 +11,11 @@ requires-python = ">= 3.12"
 # of dependency versions are not compatible.
 dependencies = [
     "vunit-hdl==5.0.0-dev.10",
+    "cocotb>=2.0.0",
+    "pytest>=9.0.0",
     "build",
     "setuptools",
+    "wheel"
 ]
 
 # See https://docs.astral.sh/ruff/configuration/
@@ -20,5 +23,5 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "e2e",
+    "e2e/",
 ]

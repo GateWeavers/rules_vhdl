@@ -1,0 +1,27 @@
+load("//vhdl:vhdl.bzl", "vhdl_library")
+load("//sim:cocotb_rules.bzl", "cocotb_sim")
+
+vhdl_library(
+    name = "dff_lib",
+    srcs = ["vhdl/dff.vhd"],
+    library_name = "work",
+)
+
+cocotb_sim(
+    name = "tb_dff",
+    dut = ":dff_lib",
+    hdl_toplevel = "dff",
+    test_module = "test_dff",
+    srcs = ["test_dff.py"],
+    simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+)
+
+cocotb_sim(
+    name = "tb_dff_custom",
+    dut = ":dff_lib",
+    hdl_toplevel = "dff",
+    test_module = "test_dff",
+    srcs = ["test_dff.py"],
+    main = "custom_runner.py",
+    simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+)
