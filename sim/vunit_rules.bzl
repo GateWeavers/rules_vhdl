@@ -151,7 +151,7 @@ vunit_context = rule(
     doc = "Gathers VHDL sources and generates a VUnit JSON configuration file.",
 )
 
-def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], main=None, **kwargs):
+def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], main=None, enable_coverage=True, **kwargs):
     """
     Macro to run a VUnit simulation.
     
@@ -167,6 +167,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         simulator: Explicit toolchain label override.
         deps: Extra Python dependencies.
         main: Optional custom runner script.
+        enable_coverage: Whether code coverage collection is enabled when running bazel coverage.
         **kwargs: Standard Bazel test attributes (tags, size, timeout).
     """
     context_name = name + "_ctx"
@@ -194,6 +195,14 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
     else:
         main_script = main
     
+    test_env = {
+        "VUNIT_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",
+        # "VUNIT_SIMULATOR": simulator if simulator else tool_simulator,
+        "VUNIT_COVERAGE_DISABLED": "0" if enable_coverage else "1",
+    }
+    user_env = kwargs.pop("env", {})
+    test_env.update(user_env)
+
     py_test(
         name = name,
         srcs = [main_script],
@@ -201,9 +210,6 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         data = [":" + context_name],
         deps = deps + ["@pypi//vunit_hdl", "@gateweaver_rules_vhdl//sim:vunit_bazel_helper"],
         args = ["--xunit-xml", "$$XML_OUTPUT_FILE"],
-        env = {
-            "VUNIT_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",
-            "VUNIT_SIMULATOR": simulator if simulator else tool_simulator,
-        },
+        env = test_env,
         **kwargs
     )

@@ -53,6 +53,21 @@ Runs a VUnit-based simulation. Automatically handles runner generation and confi
 | `main` | `label` | `None` | Optional custom `run.py` script. |
 | `deps` | `label_list` | `[]` | Extra Python dependencies. `@pypi//vunit_hdl` is included implicitly. |
 | `simulator` | `label` | `None` | Explicit simulator selection. |
+| `enable_coverage` | `bool` | `True` | Whether code coverage collection is enabled when running `bazel coverage`. |
+
+### `cocotb_sim` (Macro)
+Runs a simulation using the [Cocotb](https://www.cocotb.org/) framework (version 2.0+).
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `string` | Mandatory | Unique name for the test target. |
+| `dut` | `label` | Mandatory | The VHDL design under test (`vhdl_library` or `vhdl_module`). |
+| `hdl_toplevel`| `string` | Mandatory | The name of the top-level entity in your HDL. |
+| `test_module` | `string` | Mandatory | The Python module name (without `.py`) containing the tests. |
+| `srcs` | `label_list` | `[]` | Python test files and other HDL sources. |
+| `deps` | `label_list` | `[]` | Extra Python dependencies. `@pypi//cocotb` is included implicitly. |
+| `main` | `label` | `None` | Optional custom runner script. Must define a `main()` function. |
+| `simulator` | `label` | `None` | Explicit simulator selection. |
 
 ---
 
@@ -135,6 +150,27 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+---
+
+## Code Coverage
+
+`gateweaver_rules_vhdl` integrates code coverage collection with `bazel coverage`.
+
+### 1. Enable Coverage
+Coverage is automatically enabled when you run `bazel coverage` (which sets the standard `COVERAGE=1` environment variable).
+To opt-out a specific target from coverage collection, set `enable_coverage = False` on the `vunit_sim` macro.
+
+### 2. Simulator Support
+*   **NVC**: Supported natively. The rules compile and run the simulation with `--cover=branch,statement`, collect the resulting database, export it to Cobertura XML, and convert it to standard LCOV format.
+*   **GHDL**: Code coverage is not supported for GHDL `mcode` and `llvm` backends. Coverage runs on these targets will output a warning and skip coverage generation gracefully.
+
+### 3. Usage
+Run the coverage command on your target:
+```bash
+bazel coverage //examples/basic:tb_vunit
+```
+Bazel will execute the simulation and generate the coverage report at the path specified in the output (e.g. `bazel-out/.../coverage.dat`).
 
 ---
 
