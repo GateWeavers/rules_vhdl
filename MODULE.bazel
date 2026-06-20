@@ -61,10 +61,15 @@ vhdl_toolchains.ghdl(
     url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-llvm-6.0.0-ubuntu24.04-x86_64.tar.gz",
     version = "6.0",
 )
+# vhdl_toolchains.nvc_local(
+#     name = "local_nvc",
+#     path = "../nvc/build",
+#     version = "1.12.1",
+# )
 vhdl_toolchains.nvc_local(
     name = "local_nvc",
-    path = "../nvc/build",
-    version = "1.12.1",
+    path = "nvc-1.21.0/build",
+    version = "1.21.0",
 )
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 

@@ -56,26 +56,25 @@ def convert_cobertura_to_lcov(xml_path, lcov_path):
 
 def fallback_merge_nvc_databases(vunit_out_dir, db_file, nvc_bin):
     ncdb_files = []
-    if os.path.exists(vunit_out_dir):
-        for root, dirs, files in os.walk(vunit_out_dir):
-            for name in dirs + files:
-                if name.endswith((".ncdb", ".covdb")):
-                    full_path = os.path.join(root, name)
-                    if full_path not in ncdb_files:
-                        ncdb_files.append(full_path)
-                     
-    print(f"Found {len(ncdb_files)} individual NVC coverage databases.")
-    
-    if not ncdb_files:
-        print("No NVC coverage databases found in vunit_out, skipping coverage reporting.")
-        return False
 
-    # Clean up existing database file/directory before writing a new one
+    # Clean up existing database file/directory
     if os.path.exists(db_file):
         if os.path.isdir(db_file):
             shutil.rmtree(db_file)
         else:
             os.remove(db_file)
+
+    for root, dirs, files in os.walk(os.getcwd()):
+        for name in dirs + files:
+            full_path = os.path.abspath(os.path.join(root, name))
+            if name.endswith((".ncdb", ".covdb")):
+                if full_path not in ncdb_files:
+                    ncdb_files.append(full_path)
+    print(f"Found {len(ncdb_files)} individual NVC coverage databases.")
+    
+    if not ncdb_files:
+        print("No NVC coverage databases found, skipping coverage reporting.")
+        return False
 
     if len(ncdb_files) == 1:
         src = ncdb_files[0]
