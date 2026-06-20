@@ -116,9 +116,6 @@ def _ghdl_transition_impl(settings, attr):
                 selected_repo = repo_part
     
     if selected_repo:
-        # Bzlmod repo names can be complex (e.g. @@vhdl_toolchains+ghdl_6_0_mcode), 
-        # but the registry is keyed by the name provided in the extension.
-        # We need to find the match in the registry keys.
 
         for key in TOOLCHAIN_REGISTRY.keys():
             if key in selected_repo:
