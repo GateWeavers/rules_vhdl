@@ -21,7 +21,7 @@ dependencies = [
 # See https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
 
-[tool.uv.workspace]
-members = [
-    "e2e/",
-]
+# [tool.uv.workspace]
+# members = [
+#     "e2e/",
+# ]

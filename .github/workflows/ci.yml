@@ -28,6 +28,9 @@ jobs:
       - name: Test main repo
         run: bazel test //...
 
+      - name: Test local nvc 
+        run: bazel test //examples/basic:tb_vunit_nvc_local //examples/basic:tb_nvc_local //examples/basic:tb_nvc_local_easy
+
       - name: Test e2e/minimal_example
         working-directory: e2e/minimal_example
         run: bazel test //...

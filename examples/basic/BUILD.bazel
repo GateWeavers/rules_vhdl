@@ -43,7 +43,7 @@ vhdl_test(
     dut = ":lib",
     testbench_entity = "tb",
     tool_simulator = "nvc",
-    tool_version = "1.12.1",
+    tool_version = "1.21.0",
     tags = ["manual"],
 )
 
@@ -53,6 +53,7 @@ vhdl_test(
     dut = ":lib",
     simulator = "@vhdl_toolchains//:local_nvc",
     testbench_entity = "tb",
+    tags = ["manual"],
 )
 
 vunit_sim(
@@ -106,4 +107,5 @@ vunit_sim(
     srcs = ["vhdl/tb_vunit_min.vhd"],
     dut = ":lib",
     simulator = "@vhdl_toolchains//:local_nvc",
+    tags = ["manual"],
 )
