@@ -11,20 +11,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Mount bazel cache
-        uses: actions/cache@v4
-        with:
-          path: "~/.cache/bazel"
-          key: bazel-cache-${{ runner.os }}-${{ hashFiles('**/BUILD.bazel', '**/MODULE.bazel', '**/WORKSPACE.bazel') }}
-          restore-keys: |
-            bazel-cache-${{ runner.os }}-
+      - uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libtinfo5
+          sudo apt-get install -y  build-essential automake autoconf flex check llvm-dev pkg-config zlib1g-dev libdw-dev libffi-dev libzstd-dev pkgconf
+
+      - name: compile local nvc
+        run: |
+          wget -c https://github.com/nickg/nvc/releases/download/r1.21.0/nvc-1.21.0.tar.gz -O - | tar -xz
+          pwd
+          sudo apt-get install -y  build-essential automake autoconf flex check llvm-dev pkg-config zlib1g-dev libdw-dev libffi-dev libzstd-dev pkgconf
+          cd nvc-1.21.0 && mkdir build && cd build
+          ../configure
+          make
 
       - name: Test main repo
         run: bazel test //...

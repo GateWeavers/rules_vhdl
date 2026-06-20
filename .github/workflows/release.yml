@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "The tag to release/publish"
+        description: "The tag to release"
         required: true
       publish_to_bcr:
         description: "Whether to publish to BCR"
