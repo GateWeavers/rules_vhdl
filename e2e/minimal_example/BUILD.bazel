@@ -1,10 +1,30 @@
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
+load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate")
 load("@gateweaver_rules_vhdl//sim:sim.bzl", "vhdl_test")
 
 vhdl_library(
     name = "lib",
     srcs = ["vhdl/lib.vhd"],
     library_name = "work",
+)
+
+vhdl_translate(
+    name = "dummy_translated",
+    src = ":lib",
+    entity_name = "dummy",
+    preserve_ports = True,
+)
+
+vhdl_translate(
+    name = "dummy_translated_raw",
+    src = ":lib",
+    entity_name = "dummy",
+    preserve_ports = False,
+)
+
+vhdl_library(
+    name = "translated_lib",
+    srcs = [":dummy_translated"],
+    library_name = "translated_work",
 )
 
 vhdl_test(

@@ -54,6 +54,14 @@ vhdl_toolchains.ghdl(
     version = "6.0",
 )
 vhdl_toolchains.ghdl(
+    name = "ghdl_7_0_mcode",
+    backend = "mcode",
+    sha256 = "2f8744c1c3c646849b74d6ec1bb40c460b0ff3b79f72fef7326d088ec5dd7417",
+    strip_prefix = "ghdl-mcode-7.0.0-dev-ubuntu24.04-x86_64",
+    url = "https://github.com/ghdl/ghdl/releases/download/nightly/ghdl-mcode-7.0.0-dev-ubuntu24.04-x86_64.tar.gz",
+    version = "7.0.0.dev",
+)
+vhdl_toolchains.ghdl(
     name = "ghdl_6_0_llvm",
     backend = "llvm",
     sha256 = "e0064cd3d1569e7fca27b186b0d71e80c087de90db4e466ed77dc669a574d8bc",

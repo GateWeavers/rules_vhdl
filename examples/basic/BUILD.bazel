@@ -11,7 +11,7 @@
 
 load("//sim:sim.bzl", "vhdl_test")
 load("//sim:vunit_rules.bzl", "vunit_sim")
-load("//vhdl:vhdl.bzl", "vhdl_library")
+load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate")
 
 vhdl_library(
     name = "lib",
@@ -80,7 +80,7 @@ vunit_sim(
     name = "tb_vunit_easy",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
-    simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
 )
 
 vunit_sim(
@@ -93,7 +93,7 @@ vhdl_test(
     name = "tb_ghdl_easy",
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
-    simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
     testbench_entity = "tb",
 )
 
@@ -102,7 +102,7 @@ vunit_sim(
     srcs = ["vhdl/tb.vhd"],
     dut = ":lib",
     main = "custom_runner.py",
-    simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
 )
 
 vunit_sim(
@@ -110,7 +110,7 @@ vunit_sim(
     srcs = ["vhdl/tb_vunit_min.vhd"],
     dut = ":lib",
     main = "custom_runner.py",
-    simulator = "@vhdl_toolchains//:ghdl_6_0_mcode",
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
 )
 
 vunit_sim(
@@ -119,4 +119,40 @@ vunit_sim(
     dut = ":lib",
     simulator = "@vhdl_toolchains//:local_nvc",
     tags = ["manual"],
+)
+
+vhdl_library(
+    name = "record_io_lib",
+    srcs = ["vhdl/record_io.vhd"],
+    library_name = "work",
+)
+
+vhdl_translate(
+    name = "record_io_translated_preserved",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    preserve_ports = True,
+)
+
+vhdl_translate(
+    name = "record_io_translated_raw",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    preserve_ports = False,
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
+)
+
+vhdl_library(
+    name = "interfaces_2019_lib",
+    srcs = ["vhdl/interfaces_2019.vhd"],
+    library_name = "work",
+    vhdl_version = "2019",
+)
+
+vhdl_translate(
+    name = "interfaces_2019_translated",
+    src = ":interfaces_2019_lib",
+    entity_name = "test_view",
+    preserve_ports = False,
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
 )
