@@ -36,7 +36,7 @@ def _ghdl_toolchain_impl(ctx):
         if f.basename == "ghdl":
             ghdl_binary = f
             break
-    
+
     if not ghdl_binary:
         ghdl_binary = ctx.files.ghdl_binary[0]
 
@@ -82,7 +82,7 @@ ghdl_toolchain = rule(
 def _ghdl_transition_impl(settings, attr):
     """
     Implementation of the configuration transition for simulators.
-    
+
     Sets the simulator flags based on rule attributes or explicit hub labels.
     """
     # Default values
@@ -105,7 +105,7 @@ def _ghdl_transition_impl(settings, attr):
             parts = tc_label.split("//:")
             repo_part = parts[0].lstrip("@").replace("+", "").split("~")[-1]
             target_part = parts[1]
-            
+
             if repo_part == "vhdl_toolchains":
                 if target_part == "default":
                     selected_repo = DEFAULT_TOOLCHAIN
@@ -114,7 +114,7 @@ def _ghdl_transition_impl(settings, attr):
             else:
                 # Direct repo access (backward compatibility or external)
                 selected_repo = repo_part
-    
+
     if selected_repo:
 
         for key in TOOLCHAIN_REGISTRY.keys():
@@ -140,3 +140,10 @@ vhdl_sim_config_transition = transition(
         "@gateweaver_rules_vhdl//vhdl/config:backend",
     ],
 )
+
+def map_vhdl_version_to_ghdl_flag(version):
+    if version == "2008": return "08"
+    if version == "93": return "93"
+    if version == "87": return "87"
+    if version == "2019": return "19"
+    return "08"

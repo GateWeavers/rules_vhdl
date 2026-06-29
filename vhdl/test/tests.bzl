@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "analysistest")
-load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_module", "VhdlLibraryInfo", "VhdlModuleInfo")
+load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_module", "vhdl_translate", "VhdlLibraryInfo", "VhdlModuleInfo")
 
 # --- Test 1: Basic Library Creation & Key Generation ---
 def _basic_lib_test_impl(ctx):
@@ -94,6 +94,28 @@ def _module_deps_test_impl(ctx):
 
 module_deps_test = analysistest.make(_module_deps_test_impl)
 
+# --- Test 4: Translate VHDL 2008 to 93 Action ---
+def _translate_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target = analysistest.target_under_test(env)
+
+    # 1. Check if output file is declared
+    files = target[DefaultInfo].files.to_list()
+    asserts.equals(env, 1, len(files), "Expected exactly one output file")
+    asserts.true(env, files[0].basename.endswith(".vhd"), "Expected output file to end with .vhd")
+
+    # 2. Check the action mnemonic
+    actions = analysistest.target_actions(env)
+    asserts.equals(env, 2, len(actions), "Expected exactly two actions to be registered")
+    
+    mnemonics = [a.mnemonic for a in actions]
+    asserts.true(env, "FileWrite" in mnemonics, "Expected a FileWrite action to write the script")
+    asserts.true(env, "VhdlTranslate" in mnemonics, "Expected a VhdlTranslate action to run the script")
+
+    return analysistest.end(env)
+
+translate_test = analysistest.make(_translate_test_impl)
+
 # --- Macro to define the test suite ---
 def vhdl_rules_test_suite(name):
     
@@ -152,6 +174,20 @@ def vhdl_rules_test_suite(name):
         target_under_test = ":test_top_module",
     )
 
+    # 4. Setup for Translate 2008 to 93 Test
+    vhdl_translate(
+        name = "test_target_translate",
+        src = ":test_target_basic",
+        entity_name = "dummy_entity",
+        tool_simulator = "ghdl",
+        tool_version = "mock",
+        tags = ["manual"],
+    )
+    translate_test(
+        name = "translate_test",
+        target_under_test = ":test_target_translate",
+    )
+
     # Main test suite entry point
     native.test_suite(
         name = name,
@@ -159,5 +195,6 @@ def vhdl_rules_test_suite(name):
             ":basic_lib_test",
             ":merge_work_test",
             ":module_deps_test",
+            ":translate_test",
         ],
     )

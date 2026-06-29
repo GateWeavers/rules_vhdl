@@ -20,6 +20,8 @@ This module provides rules for defining VHDL libraries and modules,
 managing transitive dependencies, and handling VHDL versioning.
 """
 
+load("//simulator:ghdl.bzl", "vhdl_sim_config_transition","map_vhdl_version_to_ghdl_flag")
+
 # Constants for VHDL versioning
 VhdlConfigInfo = provider(
     doc = "Provider for VHDL configuration flags.",
@@ -65,7 +67,7 @@ VhdlModuleInfo = provider(
 def _process_vhdl_libraries(ctx, srcs, library_name, vhdl_version, deps, merge_work_lib):
     """
     Common logic to merge libraries and organize sources.
-    
+
     Args:
         ctx: The rule context.
         srcs: List of source files.
@@ -73,7 +75,7 @@ def _process_vhdl_libraries(ctx, srcs, library_name, vhdl_version, deps, merge_w
         vhdl_version: VHDL standard version.
         deps: Dependencies.
         merge_work_lib: Whether to merge the 'work' library from dependencies.
-        
+
     Returns:
         A dictionary of library structures.
     """
@@ -108,7 +110,7 @@ def _process_vhdl_libraries(ctx, srcs, library_name, vhdl_version, deps, merge_w
             library_name = lib_name,
             vhdl_version = ver
         )
-    
+
     return final_libraries
 
 def _vhdl_library_impl(ctx):
@@ -192,4 +194,134 @@ vhdl_module = rule(
         generics = attr.string_dict(),
     ),
     doc = "Defines a VHDL entity with its generics and transitive dependencies.",
+)
+
+def _vhdl_translate_impl(ctx):
+    # Retrieve the toolchain
+    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    if not hasattr(toolchain, "ghdl_info"):
+        fail("GHDL toolchain is required for translation.")
+
+    ghdl_info = toolchain.ghdl_info
+    ghdl_bin = ghdl_info.ghdl_binary
+
+    out_file = ctx.actions.declare_file(ctx.attr.out or (ctx.label.name + ".vhd"))
+
+    # Extract VhdlLibraryInfo details from the src target
+    src_lib_info = ctx.attr.src[VhdlLibraryInfo]
+    libs_list = src_lib_info.libraries.values()
+    if not libs_list:
+        fail("Target src VhdlLibraryInfo contains no libraries.")
+    primary_lib = libs_list[-1]
+
+    library_name = primary_lib.library_name
+    vhdl_version = primary_lib.vhdl_version
+
+    script_content = ["#!/bin/bash", "set -e"]
+
+    # Export GHDL_PREFIX so standard libraries can be found
+    script_content.append("export GHDL_PREFIX=$(dirname \"{ghdl_path}\")/../lib/ghdl".format(
+        ghdl_path = ghdl_bin.path
+    ))
+
+    std_flag = map_vhdl_version_to_ghdl_flag(vhdl_version)
+
+    # Compile transitive libraries and target library
+    for lib_info in libs_list:
+        sources_list = lib_info.sources.to_list()
+        if not sources_list:
+            continue
+        cmd = "\"{ghdl}\" -a --std={std} --work={lib} {files}".format(
+            ghdl = ghdl_bin.path,
+            std = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version),
+            lib = lib_info.library_name,
+            files = " ".join(["\"" + f.path + "\"" for f in sources_list])
+        )
+        script_content.append(cmd)
+
+    # Determine out flag for synthesis based on preserve_ports attribute
+    out_flag = "--out=vhdl" if ctx.attr.preserve_ports else "--out=raw-vhdl"
+
+    # Elaborate and synthesize using --synth
+    cmd_synth = "\"{ghdl}\" --synth {out_flag} --std={std} --work={lib} {entity} > \"{out_file}\"".format(
+        ghdl = ghdl_bin.path,
+        out_flag = out_flag,
+        std = std_flag,
+        lib = library_name,
+        entity = ctx.attr.entity_name,
+        out_file = out_file.path,
+    )
+    script_content.append(cmd_synth)
+
+    # Define the list of inputs for the action (sources from all libraries)
+    transitive_inputs = [ghdl_info.ghdl_files]
+    for lib_struct in libs_list:
+        transitive_inputs.append(lib_struct.sources)
+    inputs = depset(
+        transitive = transitive_inputs
+    )
+
+    # Write the script file
+    script_file = ctx.actions.declare_file(ctx.label.name + "_translate.sh")
+    ctx.actions.write(
+        output = script_file,
+        content = "\n".join(script_content),
+        is_executable = True,
+    )
+
+    ctx.actions.run(
+        inputs = inputs,
+        outputs = [out_file],
+        executable = script_file,
+        mnemonic = "VhdlTranslate",
+        progress_message = "Translating VHDL: %{label}",
+    )
+
+    return [
+        DefaultInfo(files = depset([out_file]))
+    ]
+
+vhdl_translate = rule(
+    implementation = _vhdl_translate_impl,
+    cfg = vhdl_sim_config_transition,
+    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    attrs = {
+        "src": attr.label(
+            providers = [VhdlLibraryInfo],
+            mandatory = True,
+            doc = "The target library or module containing the entity to translate.",
+        ),
+        "entity_name": attr.string(
+            mandatory = True,
+            doc = "The name of the entity to synthesize.",
+        ),
+        "out": attr.string(
+            doc = "Optional output file name. Defaults to <target_name>.vhd",
+        ),
+        "preserve_ports": attr.bool(
+            default = True,
+            doc = "Whether to preserve original top-level unit I/O ports. If True, uses --out=vhdl-ieee. If False, uses --out=raw-vhdl-ieee.",
+        ),
+
+        "tool_simulator": attr.string(
+            default = "ghdl",
+            doc = "Simulator type constraint ('ghdl' or 'nvc').",
+        ),
+        "tool_version": attr.string(
+            default = "default",
+            doc = "Simulator version constraint.",
+        ),
+        "tool_backend": attr.string(
+            default = "default",
+            doc = "GHDL backend constraint ('mcode' or 'llvm').",
+        ),
+        "simulator": attr.string(
+            doc = "Explicit toolchain label (e.g. '@vhdl_toolchains//:ghdl_6_0_mcode').",
+        ),
+
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
+        ),
+    },
+    doc = "Translates a VHDL 2008/2019 file to VHDL 93 by compiling it and performing synthesis using GHDL --synth.",
 )

@@ -26,6 +26,18 @@ Defines a specific VHDL entity, its generics, and its position in the dependency
 | `generics` | `string_dict`| `{}` | Map of generic names to values (as strings). |
 | `deps` | `label_list` | `[]` | Transitive dependencies. |
 
+### `vhdl_translate`
+Translates VHDL 2008/2019 files to VHDL 93 by performing synthesis using GHDL with the `--synth` flag.
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `src` | `label` | Mandatory | The VHDL 2008 source file to translate. |
+| `entity_name` | `string` | Mandatory | The name of the VHDL entity to synthesize. |
+| `out` | `string` | `None` | Optional output VHDL 93 file name. Defaults to `<target_name>.vhd`. |
+| `preserve_ports`| `bool` | `True` | Whether to preserve original top-level unit I/O ports. If True, uses `--out=vhdl`. If False, uses `--out=raw-vhdl`. |
+| `deps` | `label_list` | `[]` | Transitive library dependencies required for compilation. |
+| `simulator` | `label` | `None` | Optional explicit toolchain label to use for synthesis. |
+
 ---
 
 ## Simulation Rules (`@gateweaver_rules_vhdl//sim`)
@@ -132,18 +144,18 @@ from sim.vunit_bazel_helper import get_vunit_from_bazel, add_lib_from_bazel
 def main():
     # 1. Initialize VUnit with Bazel-resolved toolchain
     vu = get_vunit_from_bazel()
-    
+
     # 2. Add standard/support libraries
     vu.add_vhdl_builtins()
     vu.add_osvvm()
     vu.add_verification_components()
-    
+
     # 3. Automatically add all design libraries defined in BUILD.bazel
     add_lib_from_bazel(vu)
-    
+
     # 4. Custom VUnit configuration (optional)
     # vu.set_sim_option("ghdl.elaborate_options", ["--ieee=synopsys"])
-    
+
     # 5. Execute simulation
     vu.main()
 
