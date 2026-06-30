@@ -11,7 +11,7 @@
 
 load("//sim:sim.bzl", "vhdl_test")
 load("//sim:vunit_rules.bzl", "vunit_sim")
-load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate")
+load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate", "vhdl_wrapper")
 
 vhdl_library(
     name = "lib",
@@ -155,4 +155,63 @@ vhdl_translate(
     entity_name = "test_view",
     preserve_ports = False,
     simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
+)
+
+vhdl_library(
+    name = "flat_io_lib",
+    srcs = ["vhdl/flat_io.vhd"],
+    library_name = "work",
+    deps = [":record_io_lib"],
+)
+
+vhdl_wrapper(
+    name = "record_io_normal_wrapper",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    reverse = False,
+)
+
+vhdl_library(
+    name = "record_io_normal_wrapper_lib",
+    srcs = [":record_io_normal_wrapper"],
+    deps = [":record_io_lib"],
+)
+
+vhdl_wrapper(
+    name = "flat_io_reverse_wrapper",
+    src = ":flat_io_lib",
+    entity_name = "flat_io_test",
+    reverse = True,
+    # In reverse mode, the wrapper exposes record ports.
+    # The record definitions must be available during ast xml generation,
+    # which they are because flat_io_lib's source depends on work/my_types package.
+    # But wait, flat_io.vhd does not import work.my_types.all; record_io.vhd does!
+    # So we should pass record_io_lib as part of src or include the type definition dependency.
+    # Wait, can we pass a vhdl_library that has transitively all of them?
+    # Yes! Let's pass a target src that contains both or has them in deps.
+)
+
+vhdl_library(
+    name = "flat_io_reverse_wrapper_lib",
+    srcs = [
+        ":flat_io_reverse_wrapper",
+    ],
+    deps = [
+        ":flat_io_lib",
+        ":record_io_lib", # for my_types package
+    ],
+)
+
+vhdl_translate(
+    name = "record_io_normal_wrapper_translated",
+    src = ":record_io_normal_wrapper_lib",
+    entity_name = "record_io_test_wrapper",
+    preserve_ports = True,
+)
+
+vhdl_translate(
+    name = "flat_io_reverse_wrapper_translated",
+    src = ":flat_io_reverse_wrapper_lib",
+    entity_name = "flat_io_test_wrapper",
+    preserve_ports = True,
 )

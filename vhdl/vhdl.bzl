@@ -325,3 +325,114 @@ vhdl_translate = rule(
     },
     doc = "Translates a VHDL 2008/2019 file to VHDL 93 by compiling it and performing synthesis using GHDL --synth.",
 )
+
+def _vhdl_wrapper_impl(ctx):
+    # Retrieve the toolchain
+    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    if not hasattr(toolchain, "ghdl_info"):
+        fail("GHDL toolchain is required for wrapper generation.")
+
+    ghdl_info = toolchain.ghdl_info
+    ghdl_bin = ghdl_info.ghdl_binary
+
+    out_file = ctx.actions.declare_file(ctx.attr.out or (ctx.label.name + ".vhd"))
+    
+    # Extract VhdlLibraryInfo details from the src target
+    src_lib_info = ctx.attr.src[VhdlLibraryInfo]
+    libs_list = src_lib_info.libraries.values()
+    if not libs_list:
+        fail("Target src VhdlLibraryInfo contains no libraries.")
+    primary_lib = libs_list[-1]
+
+    library_name = primary_lib.library_name
+    vhdl_version = primary_lib.vhdl_version
+    std_flag = map_vhdl_version_to_ghdl_flag(vhdl_version)
+
+    # Reconstruct arguments for generator
+    args = ctx.actions.args()
+    args.add("--ghdl", ghdl_bin.path)
+    args.add("--entity", ctx.attr.entity_name)
+    args.add("--out", out_file.path)
+    args.add("--library", ctx.attr.library_name)
+    args.add("--std", std_flag)
+    if ctx.attr.reverse:
+        args.add("--reverse")
+
+    # Collect transitive inputs and construct --sources arguments
+    transitive_inputs = [ghdl_info.ghdl_files]
+    for lib_info in libs_list:
+        transitive_inputs.append(lib_info.sources)
+        for f in lib_info.sources.to_list():
+            std_v = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version)
+            args.add("--source", "{}:{}:{}".format(lib_info.library_name, std_v, f.path))
+
+    inputs = depset(transitive = transitive_inputs)
+
+    ctx.actions.run(
+        inputs = inputs,
+        outputs = [out_file],
+        executable = ctx.executable._generator,
+        arguments = [args],
+        mnemonic = "VhdlWrapperGen",
+        progress_message = "Generating VHDL Wrapper for %{label}",
+    )
+
+    return [
+        DefaultInfo(files = depset([out_file]))
+    ]
+
+vhdl_wrapper = rule(
+    implementation = _vhdl_wrapper_impl,
+    cfg = vhdl_sim_config_transition,
+    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    attrs = {
+        "src": attr.label(
+            providers = [VhdlLibraryInfo],
+            mandatory = True,
+            doc = "The target library or module containing the entity to wrap.",
+        ),
+        "entity_name": attr.string(
+            mandatory = True,
+            doc = "The name of the entity to wrap.",
+        ),
+        "out": attr.string(
+            doc = "Optional output file name. Defaults to <target_name>.vhd",
+        ),
+        "reverse": attr.bool(
+            default = False,
+            doc = "If True, generate a VHDL 2008 wrapper with record ports wrapping a flat entity. If False, generate a VHDL 93 wrapper with flat ports wrapping a record entity.",
+        ),
+        "library_name": attr.string(
+            default = "work",
+            doc = "The library name to instantiate the wrapped entity from.",
+        ),
+        "_generator": attr.label(
+            default = "//vhdl:vhdl_wrapper_generator",
+            executable = True,
+            cfg = "exec",
+        ),
+
+        "tool_simulator": attr.string(
+            default = "ghdl",
+            doc = "Simulator type constraint ('ghdl' or 'nvc').",
+        ),
+        "tool_version": attr.string(
+            default = "default",
+            doc = "Simulator version constraint.",
+        ),
+        "tool_backend": attr.string(
+            default = "default",
+            doc = "GHDL backend constraint ('mcode' or 'llvm').",
+        ),
+        "simulator": attr.string(
+            doc = "Explicit toolchain label (e.g. '@vhdl_toolchains//:ghdl_6_0_mcode').",
+        ),
+
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist"
+        ),
+    },
+    doc = "Generates a VHDL adapter wrapper file to convert between record-based and flat ports.",
+)
+
+
