@@ -1,0 +1,12 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+
+exports_files([
+    "vhdl_wrapper_generator.py",
+])
+
+py_binary(
+    name = "vhdl_wrapper_generator",
+    srcs = ["vhdl_wrapper_generator.py"],
+    main = "vhdl_wrapper_generator.py",
+    visibility = ["//visibility:public"],
+)

@@ -7,6 +7,8 @@ Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.
 ## Key Features
 
 - **Hermetic Toolchains**: Automatic fetching and isolation of simulators (GHDL/NVC). No manual installation required.
+- **VHDL 93 Translation**: Easily translate VHDL 2008/2019 entities to VHDL 93 using GHDL synthesis.
+- **VHDL Adapter Wrappers**: Bidirectionally bridge between modern VHDL record-based ports and flattened ports for backward compatibility or synthesis.
 - **VUnit Integration**: Native support for VUnit testbenches and custom Python runners.
 - **Cocotb 2.0 Support**: Modern Python-based verification using the new `cocotb_tools` runner API.
 - **Automated Build Generation**: Custom Gazelle extension that scans VHDL source code to generate and update Bazel rules automatically.
@@ -132,6 +134,49 @@ cocotb_sim(
 Run the test:
 ```bash
 bazel test //path/to:tb_dff
+```
+
+### 5. Translating VHDL (`vhdl_translate`)
+
+Translates a VHDL 2008/2019 target to VHDL 93 by compiling it and running synthesis using GHDL (`--synth`).
+
+```starlark
+load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_translate")
+
+vhdl_translate(
+    name = "uart_v93",
+    src = ":uart_lib",
+    entity_name = "uart_tx",
+    preserve_ports = True, # Preserve original top-level ports. If False, flattens ports.
+)
+```
+
+### 6. Generating Adapters/Wrappers (`vhdl_wrapper`)
+
+Generates a VHDL adapter wrapper to bridge between record-based and flattened ports:
+*   **Normal Mode (`reverse = False`)**: Generates a VHDL 93 wrapper with flattened ports wrapping a VHDL 2008 record-based entity.
+*   **Reverse Mode (`reverse = True`)**: Generates a VHDL 2008 wrapper with record-based ports wrapping a VHDL 93 flattened entity (automatically grouping flat ports matching the record fields).
+
+It runs hermetically via aspect_rules_py, using GHDL's XML AST generator to resolve types and packages.
+
+```starlark
+load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_wrapper")
+
+# Flat wrapper wrapping record-based entity
+vhdl_wrapper(
+    name = "uart_flat_wrapper",
+    src = ":uart_lib",
+    entity_name = "uart_tx",
+    reverse = False,
+)
+
+# Record-based wrapper wrapping flat entity
+vhdl_wrapper(
+    name = "uart_record_wrapper",
+    src = ":flat_uart_lib",
+    entity_name = "uart_tx_flat",
+    reverse = True,
+)
 ```
 
 To run with a GUI (GTKWave), use:
