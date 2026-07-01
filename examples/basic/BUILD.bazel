@@ -12,6 +12,7 @@
 load("//sim:sim.bzl", "vhdl_test")
 load("//sim:vunit_rules.bzl", "vunit_sim")
 load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate", "vhdl_wrapper")
+load("//vhdl:translate_and_verify.bzl", "vhdl_translate_and_verify")
 
 vhdl_library(
     name = "lib",
@@ -214,4 +215,15 @@ vhdl_translate(
     src = ":flat_io_reverse_wrapper_lib",
     entity_name = "flat_io_test_wrapper",
     preserve_ports = True,
+)
+
+vhdl_translate_and_verify(
+    name = "record_io_equivalence",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    preserve_ports = False,
+    testbench_srcs = ["vhdl/tb_record_io.vhd"],
+    testbench_entity = "tb_record_io",
+    test_type = "vhdl",
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
 )

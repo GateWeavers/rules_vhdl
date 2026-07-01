@@ -357,6 +357,8 @@ def _vhdl_wrapper_impl(ctx):
     args.add("--std", std_flag)
     if ctx.attr.reverse:
         args.add("--reverse")
+    if ctx.attr.wrapper_entity:
+        args.add("--wrapper-entity", ctx.attr.wrapper_entity)
 
     # Collect transitive inputs and construct --sources arguments
     transitive_inputs = [ghdl_info.ghdl_files]
@@ -405,6 +407,9 @@ vhdl_wrapper = rule(
         "library_name": attr.string(
             default = "work",
             doc = "The library name to instantiate the wrapped entity from.",
+        ),
+        "wrapper_entity": attr.string(
+            doc = "Override the generated wrapper entity name. Defaults to <entity_name>_wrapper.",
         ),
         "_generator": attr.label(
             default = "//vhdl:vhdl_wrapper_generator",

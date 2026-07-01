@@ -208,16 +208,17 @@ def parse_ast_xml(xml_content, entity_name, reverse):
                 rec_fields = rec_info['fields']
                 
                 for f_name, _ in rec_fields:
-                    suffix = f"_{f_name}"
-                    if p['name'].endswith(suffix):
-                        prefix = p['name'][:-len(suffix)]
+                    # 1. Extended naming convention: \<prefix>[<f_name>]\
+                    suffix_ext = f"[{f_name}]\\"
+                    if p['name'].endswith(suffix_ext) and p['name'].startswith("\\"):
+                        prefix = p['name'][1:-len(suffix_ext)]
                         candidate_flat_ports = {}
                         all_fields_exist = True
                         for f_name_check, _ in rec_fields:
-                            flat_name = f"{prefix}_{f_name_check}"
+                            flat_name = f"\\{prefix}[{f_name_check}]\\"
                             found_port = None
                             for other_p in ports:
-                                if other_p['name'] == flat_name and other_p['mode'] == p['mode']:
+                                if other_p['name'].lower() == flat_name.lower() and other_p['mode'] == p['mode']:
                                     found_port = other_p
                                     break
                             if found_port is not None and found_port['name'] not in used_flat_names:
@@ -225,14 +226,46 @@ def parse_ast_xml(xml_content, entity_name, reverse):
                             else:
                                 all_fields_exist = False
                                 break
-                                
                         if all_fields_exist:
                             grouped_ports.append({
                                 'name': prefix,
                                 'mode': p['mode'],
                                 'type': rec_info['name'],
                                 'is_record': True,
-                                'record_def': rec_info
+                                'record_def': rec_info,
+                                'flat_member_ports': candidate_flat_ports
+                            })
+                            for fp in candidate_flat_ports.values():
+                                used_flat_names.add(fp['name'])
+                            matched = True
+                            break
+
+                    # 2. Underscore naming convention: <prefix>_<f_name>
+                    suffix_under = f"_{f_name}"
+                    if p['name'].endswith(suffix_under):
+                        prefix = p['name'][:-len(suffix_under)]
+                        candidate_flat_ports = {}
+                        all_fields_exist = True
+                        for f_name_check, _ in rec_fields:
+                            flat_name = f"{prefix}_{f_name_check}"
+                            found_port = None
+                            for other_p in ports:
+                                if other_p['name'].lower() == flat_name.lower() and other_p['mode'] == p['mode']:
+                                    found_port = other_p
+                                    break
+                            if found_port is not None and found_port['name'] not in used_flat_names:
+                                candidate_flat_ports[f_name_check] = found_port
+                            else:
+                                all_fields_exist = False
+                                break
+                        if all_fields_exist:
+                            grouped_ports.append({
+                                'name': prefix,
+                                'mode': p['mode'],
+                                'type': rec_info['name'],
+                                'is_record': True,
+                                'record_def': rec_info,
+                                'flat_member_ports': candidate_flat_ports
                             })
                             for fp in candidate_flat_ports.values():
                                 used_flat_names.add(fp['name'])
@@ -246,6 +279,15 @@ def parse_ast_xml(xml_content, entity_name, reverse):
                 used_flat_names.add(p['name'])
         ports = grouped_ports
 
+        # Constructive fallback for ports that were already records in the input AST
+        for p in ports:
+            if p['is_record'] and 'flat_member_ports' not in p:
+                p['flat_member_ports'] = {}
+                for f_name, _ in p['record_def']['fields']:
+                    # Default to GHDL's extended naming convention: \port[field]\
+                    flat_name = f"\\{p['name']}[{f_name}]\\"
+                    p['flat_member_ports'][f_name] = {'name': flat_name}
+
     # Add package imports for any record ports used, especially in reverse mode
     for p in ports:
         if p['is_record'] and p['record_def']['package']:
@@ -255,8 +297,7 @@ def parse_ast_xml(xml_content, entity_name, reverse):
 
     return unique_context_lines, generics, ports
 
-def generate_normal_wrapper(entity_name, context_lines, generics, ports, library_name):
-    wrapper_name = f"{entity_name}_wrapper"
+def generate_normal_wrapper(entity_name, wrapper_name, context_lines, generics, ports, library_name):
     lines = []
     lines.append("-- Generated by vhdl_wrapper_generator.py (normal mode)")
     lines.extend(context_lines)
@@ -318,8 +359,7 @@ def generate_normal_wrapper(entity_name, context_lines, generics, ports, library
     lines.append("")
     return "\n".join(lines)
 
-def generate_reverse_wrapper(entity_name, context_lines, generics, ports, library_name):
-    wrapper_name = f"{entity_name}_wrapper"
+def generate_reverse_wrapper(entity_name, wrapper_name, context_lines, generics, ports, library_name):
     lines = []
     lines.append("-- Generated by vhdl_wrapper_generator.py (reverse mode)")
     lines.extend(context_lines)
@@ -357,7 +397,8 @@ def generate_reverse_wrapper(entity_name, context_lines, generics, ports, librar
     for p in ports:
         if p['is_record']:
             for f_name, _ in p['record_def']['fields']:
-                port_maps.append(f"      {p['name']}_{f_name} => {p['name']}.{f_name}")
+                flat_port_name = p['flat_member_ports'][f_name]['name']
+                port_maps.append(f"      {flat_port_name} => {p['name']}.{f_name}")
         else:
             port_maps.append(f"      {p['name']} => {p['name']}")
     lines.append(",\n".join(port_maps))
@@ -374,6 +415,7 @@ def main():
     parser.add_argument("--out", required=True, help="Path to output wrapper VHDL file")
     parser.add_argument("--reverse", action="store_true", help="Generate reverse wrapper (record-to-flat)")
     parser.add_argument("--library", default="work", help="Library name for inner entity")
+    parser.add_argument("--wrapper-entity", help="Override generated wrapper entity name")
     parser.add_argument("--std", default="08", help="VHDL standard flag for primary target")
     parser.add_argument("--source", action="append", dest="sources", required=True,
                         help="Transitive source in the format library:std:file_path")
@@ -393,11 +435,16 @@ def main():
     # Parse interface and types
     context_lines, generics, ports = parse_ast_xml(xml_content, args.entity, args.reverse)
 
+    if args.library != "work" and f"library {args.library};" not in context_lines:
+        context_lines.insert(0, f"library {args.library};")
+
+    wrapper_name = args.wrapper_entity if args.wrapper_entity else f"{args.entity}_wrapper"
+
     # Generate code
     if not args.reverse:
-        wrapper_code = generate_normal_wrapper(args.entity, context_lines, generics, ports, args.library)
+        wrapper_code = generate_normal_wrapper(args.entity, wrapper_name, context_lines, generics, ports, args.library)
     else:
-        wrapper_code = generate_reverse_wrapper(args.entity, context_lines, generics, ports, args.library)
+        wrapper_code = generate_reverse_wrapper(args.entity, wrapper_name, context_lines, generics, ports, args.library)
 
     # Write wrapper file
     with open(args.out, "w") as f:

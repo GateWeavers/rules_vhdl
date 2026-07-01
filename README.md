@@ -151,11 +151,29 @@ vhdl_translate(
 )
 ```
 
-### 6. Generating Adapters/Wrappers (`vhdl_wrapper`)
+### 6. Translating and Verifying (`vhdl_translate_and_verify`)
+
+Translates a target design to VHDL 93 and automatically defines two parallel test targets (`_orig_test` and `_translated_test`) using a user-specified testbench (VHDL, VUnit, or Cocotb) to verify functional equivalence. If `preserve_ports = False`, it automatically generates a record-exposure wrapper to bind the flat VHDL 93 design to the record-based testbench.
+
+```starlark
+load("@gateweaver_rules_vhdl//vhdl:translate_and_verify.bzl", "vhdl_translate_and_verify")
+
+vhdl_translate_and_verify(
+    name = "uart_equivalence",
+    src = ":uart_lib",
+    entity_name = "uart_tx",
+    preserve_ports = False, # Flattens ports during translation; uses wrapper to check equivalence
+    testbench_srcs = ["test/tb_uart_tx.vhd"],
+    testbench_entity = "tb_uart_tx",
+    test_type = "vhdl", # "vhdl", "vunit", or "cocotb"
+)
+```
+
+### 7. Generating Adapters/Wrappers (`vhdl_wrapper`)
 
 Generates a VHDL adapter wrapper to bridge between record-based and flattened ports:
 *   **Normal Mode (`reverse = False`)**: Generates a VHDL 93 wrapper with flattened ports wrapping a VHDL 2008 record-based entity.
-*   **Reverse Mode (`reverse = True`)**: Generates a VHDL 2008 wrapper with record-based ports wrapping a VHDL 93 flattened entity (automatically grouping flat ports matching the record fields).
+*   **Reverse Mode (`reverse = True`)**: Generates a VHDL 2008 wrapper with record-based ports wrapping a VHDL 93 flattened entity (automatically grouping flat ports matching the record fields, including support for GHDL's `\input[data]\` extended naming convention).
 
 It runs hermetically via aspect_rules_py, using GHDL's XML AST generator to resolve types and packages.
 
