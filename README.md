@@ -1,8 +1,8 @@
-# gateweaver_rules_vhdl
+# gateweavers_rules_vhdl
 
 Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.build).
 
-`gateweaver_rules_vhdl` provides a robust infrastructure for VHDL development, integrating standard simulators (GHDL, NVC) with the [VUnit](https://vunit.github.io/) verification framework. It leverages `aspect_rules_py` for a fully hermetic Python environment.
+`gateweavers_rules_vhdl` provides a robust infrastructure for VHDL development, integrating standard simulators (GHDL, NVC) with the [VUnit](https://vunit.github.io/) verification framework. It leverages `aspect_rules_py` for a fully hermetic Python environment.
 
 ## Key Features
 
@@ -22,10 +22,10 @@ Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.
 Add the following to your `MODULE.bazel` file:
 
 ```starlark
-bazel_dep(name = "gateweaver_rules_vhdl", version = "0.1.0")
+bazel_dep(name = "gateweavers_rules_vhdl", version = "0.1.0")
 
 # Register VHDL Toolchains (Hermetic Simulators)
-vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 
 # Define a GHDL toolchain (mcode backend)
 vhdl_toolchains.ghdl(
@@ -60,14 +60,14 @@ uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
 uv.declare_hub(hub_name = "pypi")
 uv.project(
     hub_name = "pypi",
-    lock = "@gateweaver_rules_vhdl//:uv.lock",
-    pyproject = "@gateweaver_rules_vhdl//:pyproject.toml",
+    lock = "@gateweavers_rules_vhdl//:uv.lock",
+    pyproject = "@gateweavers_rules_vhdl//:pyproject.toml",
 )
 use_repo(uv, "pypi")
 ```
 # 3. setup the default venv in your .bazelrc
 ```text
-common --@pypi//venv=common --@pypi//venv=gateweaver_rules_vhdl
+common --@pypi//venv=common --@pypi//venv=gateweavers_rules_vhdl
 ```
 
 ---
@@ -77,7 +77,7 @@ common --@pypi//venv=common --@pypi//venv=gateweaver_rules_vhdl
 ### 1. Defining a Library
 
 ```starlark
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
 
 vhdl_library(
     name = "uart_lib",
@@ -94,7 +94,7 @@ vhdl_library(
 Use `vhdl_test` for standard VHDL testbenches that don't require the VUnit framework.
 
 ```starlark
-load("@gateweaver_rules_vhdl//sim:sim.bzl", "vhdl_test")
+load("@gateweavers_rules_vhdl//sim:sim.bzl", "vhdl_test")
 
 vhdl_test(
     name = "tb_basic",
@@ -108,7 +108,7 @@ vhdl_test(
 ### 3. Running a VUnit Simulation
 
 ```starlark
-load("@gateweaver_rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
+load("@gateweavers_rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
 
 vunit_sim(
     name = "tb_uart",
@@ -120,7 +120,7 @@ vunit_sim(
 ### 4. Running a Cocotb Simulation
 
 ```starlark
-load("@gateweaver_rules_vhdl//sim:cocotb_rules.bzl", "cocotb_sim")
+load("@gateweavers_rules_vhdl//sim:cocotb_rules.bzl", "cocotb_sim")
 
 cocotb_sim(
     name = "tb_dff",
@@ -141,7 +141,7 @@ bazel test //path/to:tb_dff
 Translates a VHDL 2008/2019 target to VHDL 93 by compiling it and running synthesis using GHDL (`--synth`).
 
 ```starlark
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_translate")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_translate")
 
 vhdl_translate(
     name = "uart_v93",
@@ -156,7 +156,7 @@ vhdl_translate(
 Translates a target design to VHDL 93 and automatically defines two parallel test targets (`_orig_test` and `_translated_test`) using a user-specified testbench (VHDL, VUnit, or Cocotb) to verify functional equivalence. If `preserve_ports = False`, it automatically generates a record-exposure wrapper to bind the flat VHDL 93 design to the record-based testbench.
 
 ```starlark
-load("@gateweaver_rules_vhdl//vhdl:translate_and_verify.bzl", "vhdl_translate_and_verify")
+load("@gateweavers_rules_vhdl//vhdl:translate_and_verify.bzl", "vhdl_translate_and_verify")
 
 vhdl_translate_and_verify(
     name = "uart_equivalence",
@@ -178,7 +178,7 @@ Generates a VHDL adapter wrapper to bridge between record-based and flattened po
 It runs hermetically via aspect_rules_py, using GHDL's XML AST generator to resolve types and packages.
 
 ```starlark
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_wrapper")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_wrapper")
 
 # Flat wrapper wrapping record-based entity
 vhdl_wrapper(
@@ -257,7 +257,7 @@ vunit_sim(
 
 ## Automation with Gazelle (Experimental)
 
-`gateweaver_rules_vhdl` includes a Gazelle extension that automates the creation of `vhdl_library` and `vunit_sim` rules.
+`gateweavers_rules_vhdl` includes a Gazelle extension that automates the creation of `vhdl_library` and `vunit_sim` rules.
 
 ### Setup
 
@@ -270,7 +270,7 @@ gazelle_binary(
     name = "gazelle_vhdl_binary",
     languages = [
         "@gazelle//language/go",
-        "@gateweaver_rules_vhdl//tooling/gazelle/vhdl",
+        "@gateweavers_rules_vhdl//tooling/gazelle/vhdl",
     ],
 )
 

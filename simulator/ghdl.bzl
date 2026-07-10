@@ -126,18 +126,18 @@ def _ghdl_transition_impl(settings, attr):
                 break
 
     return {
-        "@gateweaver_rules_vhdl//vhdl/config:simulator": simulator_type,
-        "@gateweaver_rules_vhdl//vhdl/config:version": version,
-        "@gateweaver_rules_vhdl//vhdl/config:backend": backend,
+        "@gateweavers_rules_vhdl//vhdl/config:simulator": simulator_type,
+        "@gateweavers_rules_vhdl//vhdl/config:version": version,
+        "@gateweavers_rules_vhdl//vhdl/config:backend": backend,
     }
 
 vhdl_sim_config_transition = transition(
     implementation = _ghdl_transition_impl,
     inputs = [],
     outputs = [
-        "@gateweaver_rules_vhdl//vhdl/config:simulator",
-        "@gateweaver_rules_vhdl//vhdl/config:version",
-        "@gateweaver_rules_vhdl//vhdl/config:backend",
+        "@gateweavers_rules_vhdl//vhdl/config:simulator",
+        "@gateweavers_rules_vhdl//vhdl/config:version",
+        "@gateweavers_rules_vhdl//vhdl/config:backend",
     ],
 )
 

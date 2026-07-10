@@ -1,4 +1,4 @@
-module gateweaver_rules_vhdl
+module gateweavers_rules_vhdl
 
 go 1.22.0
 

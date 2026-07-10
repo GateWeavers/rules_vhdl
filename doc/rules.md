@@ -1,8 +1,8 @@
-# gateweaver_rules_vhdl: Technical Reference
+# gateweavers_rules_vhdl: Technical Reference
 
-This document provides a comprehensive reference for the Bazel rules and attributes provided by `gateweaver_rules_vhdl`.
+This document provides a comprehensive reference for the Bazel rules and attributes provided by `gateweavers_rules_vhdl`.
 
-## VHDL Core Rules (`@gateweaver_rules_vhdl//vhdl`)
+## VHDL Core Rules (`@gateweavers_rules_vhdl//vhdl`)
 
 ### `vhdl_library`
 Aggregates VHDL source files into a named library and manages transitive dependencies.
@@ -40,7 +40,7 @@ Translates VHDL 2008/2019 files to VHDL 93 by performing synthesis using GHDL wi
 
 ---
 
-## Simulation Rules (`@gateweaver_rules_vhdl//sim`)
+## Simulation Rules (`@gateweavers_rules_vhdl//sim`)
 
 ### `vhdl_test`
 Runs a standard VHDL testbench using the resolved toolchain.
@@ -83,7 +83,7 @@ Runs a simulation using the [Cocotb](https://www.cocotb.org/) framework (version
 
 ---
 
-## Toolchain Management (`@gateweaver_rules_vhdl//simulator`)
+## Toolchain Management (`@gateweavers_rules_vhdl//simulator`)
 
 ### `vhdl_toolchains` (Module Extension)
 Manages hermetic installations of VHDL simulators (GHDL, NVC).
@@ -103,10 +103,10 @@ Manages hermetic installations of VHDL simulators (GHDL, NVC).
 To register toolchains, use the `vhdl_toolchains` hub repo. Here is a complete `MODULE.bazel` example:
 
 ```python
-bazel_dep(name = "gateweaver_rules_vhdl", version = "0.1.0")
+bazel_dep(name = "gateweavers_rules_vhdl", version = "0.1.0")
 
 # Use the toolchain extension
-vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 
 # Define one or more toolchains
 vhdl_toolchains.ghdl(
@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
 ## Code Coverage
 
-`gateweaver_rules_vhdl` integrates code coverage collection with `bazel coverage`.
+`gateweavers_rules_vhdl` integrates code coverage collection with `bazel coverage`.
 
 ### 1. Enable Coverage
 Coverage is automatically enabled when you run `bazel coverage` (which sets the standard `COVERAGE=1` environment variable).
@@ -188,7 +188,7 @@ Bazel will execute the simulation and generate the coverage report at the path s
 
 ## Running with GUI (GTKWave)
 
-`gateweaver_rules_vhdl` supports running simulations interactively with a GUI. This is typically used with **GTKWave**.
+`gateweavers_rules_vhdl` supports running simulations interactively with a GUI. This is typically used with **GTKWave**.
 
 ### 1. Configure the Runner
 In your `run.py`, ensure the simulator is configured to use GTKWave as the viewer:

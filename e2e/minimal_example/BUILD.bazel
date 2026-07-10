@@ -1,5 +1,5 @@
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate")
-load("@gateweaver_rules_vhdl//sim:sim.bzl", "vhdl_test")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate")
+load("@gateweavers_rules_vhdl//sim:sim.bzl", "vhdl_test")
 
 vhdl_library(
     name = "lib",

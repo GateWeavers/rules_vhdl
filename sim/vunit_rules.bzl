@@ -17,8 +17,8 @@ VUnit simulations hermetically within Bazel.
 """
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
-load("@gateweaver_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
+load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
 # --- LE TEMPLATE PYTHON ---
 _RUNNER_TEMPLATE = """
@@ -62,7 +62,7 @@ _vunit_runner_gen = rule(
 )
 
 def _vunit_context_impl(ctx):
-    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
     
     binary_file = None
     library_path = None
@@ -129,7 +129,7 @@ def _vunit_context_impl(ctx):
 vunit_context = rule(
     implementation = _vunit_context_impl,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    toolchains = ["@gateweavers_rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "dut": attr.label(
             providers = [VhdlLibraryInfo],
@@ -219,7 +219,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         srcs = [main_script],
         main = main_script,
         data = [":" + context_name],
-        deps = deps + ["@pypi//vunit_hdl", "@gateweaver_rules_vhdl//sim:vunit_bazel_helper"],
+        deps = deps + ["@pypi//vunit_hdl", "@gateweavers_rules_vhdl//sim:vunit_bazel_helper"],
         args = ["--xunit-xml", "$$XML_OUTPUT_FILE"],
         env = test_env,
         **kwargs

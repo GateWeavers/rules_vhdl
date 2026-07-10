@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 """
-# Core VHDL rules for gateweaver_rules_vhdl.
+# Core VHDL rules for gateweavers_rules_vhdl.
 
 
 This module provides rules for defining VHDL libraries and modules,
@@ -198,7 +198,7 @@ vhdl_module = rule(
 
 def _vhdl_translate_impl(ctx):
     # Retrieve the toolchain
-    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
     if not hasattr(toolchain, "ghdl_info"):
         fail("GHDL toolchain is required for translation.")
 
@@ -284,7 +284,7 @@ def _vhdl_translate_impl(ctx):
 vhdl_translate = rule(
     implementation = _vhdl_translate_impl,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    toolchains = ["@gateweavers_rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "src": attr.label(
             providers = [VhdlLibraryInfo],
@@ -328,7 +328,7 @@ vhdl_translate = rule(
 
 def _vhdl_wrapper_impl(ctx):
     # Retrieve the toolchain
-    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
     if not hasattr(toolchain, "ghdl_info"):
         fail("GHDL toolchain is required for wrapper generation.")
 
@@ -386,7 +386,7 @@ def _vhdl_wrapper_impl(ctx):
 vhdl_wrapper = rule(
     implementation = _vhdl_wrapper_impl,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    toolchains = ["@gateweavers_rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "src": attr.label(
             providers = [VhdlLibraryInfo],
