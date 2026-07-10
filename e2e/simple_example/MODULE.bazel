@@ -1,8 +1,8 @@
-module(name = "gateweaver_rules_vhdl_e2e")
+module(name = "gateweavers_rules_vhdl_e2e")
 
-bazel_dep(name = "gateweaver_rules_vhdl")
+bazel_dep(name = "gateweavers_rules_vhdl")
 local_path_override(
-    module_name = "gateweaver_rules_vhdl",
+    module_name = "gateweavers_rules_vhdl",
     path = "../..",
 )
 
@@ -22,12 +22,12 @@ uv = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv")
 uv.declare_hub(hub_name = "pypi")
 uv.project(
     hub_name = "pypi",
-    lock = "@gateweaver_rules_vhdl//:uv.lock",
-    pyproject = "@gateweaver_rules_vhdl//:pyproject.toml",
+    lock = "@gateweavers_rules_vhdl//:uv.lock",
+    pyproject = "@gateweavers_rules_vhdl//:pyproject.toml",
 )
 use_repo(uv, "pypi")
 
-vhdl_toolchains = use_extension("@gateweaver_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
 vhdl_toolchains.ghdl(

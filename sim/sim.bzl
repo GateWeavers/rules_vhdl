@@ -16,11 +16,11 @@ This module provides rules and macros for executing VHDL testbenches using
 GHDL or NVC, as well as high-level VUnit integration.
 """
 
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
-load("@gateweaver_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition","map_vhdl_version_to_ghdl_flag")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
+load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition","map_vhdl_version_to_ghdl_flag")
 
 def _vhdl_test_impl(ctx):
-    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
 
     # Collect all sources for runfiles
     dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
@@ -127,7 +127,7 @@ vhdl_test = rule(
     implementation = _vhdl_test_impl,
     test = True,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    toolchains = ["@gateweavers_rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "srcs": attr.label_list(
             allow_files = [".vhd"],

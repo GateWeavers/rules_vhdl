@@ -75,4 +75,4 @@ common --incompatible_strict_action_env
 # Docs: https://registry.build/flag/bazel@8.4.0?filter=incompatible_strict_action_env
 
 # Config for e2e workspace
-common --@pypi//venv=gateweaver_rules_vhdl
+common --@pypi//venv=gateweavers_rules_vhdl

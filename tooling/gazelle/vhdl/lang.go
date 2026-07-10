@@ -78,11 +78,11 @@ func (*vhdlLang) Kinds() map[string]rule.KindInfo {
 func (*vhdlLang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name:    "@gateweaver_rules_vhdl//vhdl:vhdl.bzl",
+			Name:    "@gateweavers_rules_vhdl//vhdl:vhdl.bzl",
 			Symbols: []string{"vhdl_library"},
 		},
 		{
-			Name:    "@gateweaver_rules_vhdl//sim:vunit_rules.bzl",
+			Name:    "@gateweavers_rules_vhdl//sim:vunit_rules.bzl",
 			Symbols: []string{"vunit_sim"},
 		},
 	}

@@ -1,5 +1,5 @@
 module(
-    name = "gateweaver_rules_vhdl",
+    name = "gateweavers_rules_vhdl",
     version = "0.1.0",
 )
 

@@ -14,11 +14,11 @@ Cocotb 2.0 integration rules for Bazel.
 """
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("@gateweaver_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
-load("@gateweaver_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
+load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
 
 def _cocotb_context_impl(ctx):
-    toolchain = ctx.toolchains["@gateweaver_rules_vhdl//simulator:toolchain_type"]
+    toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
     
     if hasattr(toolchain, "ghdl_info"):
         sim_type, info = "ghdl", toolchain.ghdl_info
@@ -60,7 +60,7 @@ def _cocotb_context_impl(ctx):
 cocotb_context = rule(
     implementation = _cocotb_context_impl,
     cfg = vhdl_sim_config_transition,
-    toolchains = ["@gateweaver_rules_vhdl//simulator:toolchain_type"],
+    toolchains = ["@gateweavers_rules_vhdl//simulator:toolchain_type"],
     attrs = {
         "dut": attr.label(providers = [VhdlLibraryInfo], mandatory = True),
         "hdl_toplevel": attr.string(mandatory = True),
@@ -101,7 +101,7 @@ def cocotb_sim(name, dut, hdl_toplevel, test_module, srcs = [], main = None, **k
     
     deps = kwargs.get("deps", []) + [
         "@pypi//cocotb",
-        "@gateweaver_rules_vhdl//sim:cocotb_bazel_helper"
+        "@gateweavers_rules_vhdl//sim:cocotb_bazel_helper"
     ]
 
     if main:
@@ -120,7 +120,7 @@ def cocotb_sim(name, dut, hdl_toplevel, test_module, srcs = [], main = None, **k
     py_test(
         name = name,
         srcs = actual_srcs,
-        main = "@gateweaver_rules_vhdl//sim:cocotb_bazel_helper.py",
+        main = "@gateweavers_rules_vhdl//sim:cocotb_bazel_helper.py",
         data = [":" + context_name],
         deps = deps,
         env = env,
