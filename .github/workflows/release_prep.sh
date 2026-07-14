@@ -6,8 +6,8 @@ set -o errexit -o nounset -o pipefail
 # https://docs.github.com/en/actions/learn-github-actions/environment-variables#default-environment-variables
 TAG=${GITHUB_REF_NAME}
 # The prefix is chosen to match what GitHub generates for source archives
-PREFIX="rules_py-${TAG:1}"
-ARCHIVE="rules_py-$TAG.tar.gz"
+PREFIX="rules_vhdl-${TAG:1}"
+ARCHIVE="rules_vhdl-$TAG.tar.gz"
 ARCHIVE_TMP=$(mktemp)
 
 # NB: configuration for 'git archive' is in /.gitattributes
