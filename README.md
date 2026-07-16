@@ -77,7 +77,7 @@ common --@pypi//venv=common --@pypi//venv=gateweavers_rules_vhdl
 ### 1. Defining a Library
 
 ```starlark
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_library")
 
 vhdl_library(
     name = "uart_lib",
@@ -94,7 +94,7 @@ vhdl_library(
 Use `vhdl_test` for standard VHDL testbenches that don't require the VUnit framework.
 
 ```starlark
-load("@gateweavers_rules_vhdl//sim:sim.bzl", "vhdl_test")
+load("@gateweavers_rules_vhdl//sim:defs.bzl", "vhdl_test")
 
 vhdl_test(
     name = "tb_basic",
@@ -108,7 +108,7 @@ vhdl_test(
 ### 3. Running a VUnit Simulation
 
 ```starlark
-load("@gateweavers_rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
+load("@gateweavers_rules_vhdl//sim:defs.bzl", "vunit_sim")
 
 vunit_sim(
     name = "tb_uart",
@@ -120,7 +120,7 @@ vunit_sim(
 ### 4. Running a Cocotb Simulation
 
 ```starlark
-load("@gateweavers_rules_vhdl//sim:cocotb_rules.bzl", "cocotb_sim")
+load("@gateweavers_rules_vhdl//sim:defs.bzl", "cocotb_sim")
 
 cocotb_sim(
     name = "tb_dff",
@@ -141,7 +141,7 @@ bazel test //path/to:tb_dff
 Translates a VHDL 2008/2019 target to VHDL 93 by compiling it and running synthesis using GHDL (`--synth`).
 
 ```starlark
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_translate")
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_translate")
 
 vhdl_translate(
     name = "uart_v93",
@@ -156,7 +156,7 @@ vhdl_translate(
 Translates a target design to VHDL 93 and automatically defines two parallel test targets (`_orig_test` and `_translated_test`) using a user-specified testbench (VHDL, VUnit, or Cocotb) to verify functional equivalence. If `preserve_ports = False`, it automatically generates a record-exposure wrapper to bind the flat VHDL 93 design to the record-based testbench.
 
 ```starlark
-load("@gateweavers_rules_vhdl//vhdl:translate_and_verify.bzl", "vhdl_translate_and_verify")
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_translate_and_verify")
 
 vhdl_translate_and_verify(
     name = "uart_equivalence",
@@ -178,7 +178,7 @@ Generates a VHDL adapter wrapper to bridge between record-based and flattened po
 It runs hermetically via aspect_rules_py, using GHDL's XML AST generator to resolve types and packages.
 
 ```starlark
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_wrapper")
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_wrapper")
 
 # Flat wrapper wrapping record-based entity
 vhdl_wrapper(

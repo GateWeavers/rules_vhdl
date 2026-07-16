@@ -9,7 +9,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_library")
 
 # gazelle:vhdl_library_name uart_lib
 

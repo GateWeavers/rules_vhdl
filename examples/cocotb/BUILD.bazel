@@ -9,8 +9,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-load("//vhdl:vhdl.bzl", "vhdl_library")
-load("//sim:cocotb_rules.bzl", "cocotb_sim")
+load("//vhdl:defs.bzl", "vhdl_library")
+load("//sim:defs.bzl", "cocotb_sim")
 
 vhdl_library(
     name = "dff_lib",

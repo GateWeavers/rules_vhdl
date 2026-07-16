@@ -9,10 +9,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-load("//sim:sim.bzl", "vhdl_test")
-load("//sim:vunit_rules.bzl", "vunit_sim")
-load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_translate", "vhdl_wrapper")
-load("//vhdl:translate_and_verify.bzl", "vhdl_translate_and_verify")
+load("//sim:defs.bzl", "vhdl_test")
+load("//sim:defs.bzl", "vunit_sim")
+load("//vhdl:defs.bzl", "vhdl_library", "vhdl_translate", "vhdl_wrapper")
+load("//vhdl:defs.bzl", "vhdl_translate_and_verify")
 
 vhdl_library(
     name = "lib",

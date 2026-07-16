@@ -1,6 +1,6 @@
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "vhdl_library")
-load("@gateweavers_rules_vhdl//sim:sim.bzl", "vhdl_test")
-load("@gateweavers_rules_vhdl//sim:vunit_rules.bzl", "vunit_sim")
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_library")
+load("@gateweavers_rules_vhdl//sim:defs.bzl", "vhdl_test")
+load("@gateweavers_rules_vhdl//sim:defs.bzl", "vunit_sim")
 
 vhdl_library(
     name = "lib",
