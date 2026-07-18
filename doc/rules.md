@@ -14,6 +14,7 @@ Aggregates VHDL source files into a named library and manages transitive depende
 | `vhdl_version` | `string` | `"2008"` | VHDL standard: `"87"`, `"93"`, `"2008"`, or `"2019"`. |
 | `deps` | `label_list` | `[]` | Dependencies providing `VhdlLibraryInfo`. |
 | `merge_work_lib`| `bool` | `False` | If True, merges sources from dependencies assigned to the `"work"` library into this library. |
+| `data` | `label_list` | `[]` | Extra files to package (e.g. constraints, templates) included in the DefaultInfo provider. |
 
 ### `vhdl_module`
 Defines a specific VHDL entity, its generics, and its position in the dependency tree.
@@ -25,6 +26,7 @@ Defines a specific VHDL entity, its generics, and its position in the dependency
 | `library_name` | `string` | `"work"` | The library this module belongs to. |
 | `generics` | `string_dict`| `{}` | Map of generic names to values (as strings). |
 | `deps` | `label_list` | `[]` | Transitive dependencies. |
+| `data` | `label_list` | `[]` | Extra files to package (e.g. constraints, templates) included in the DefaultInfo provider. |
 
 ### `vhdl_translate`
 Translates VHDL 2008/2019 files to VHDL 93 by performing synthesis using GHDL with the `--synth` flag.
