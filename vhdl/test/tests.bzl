@@ -116,6 +116,40 @@ def _translate_test_impl(ctx):
 
 translate_test = analysistest.make(_translate_test_impl)
 
+# --- Test 5: Data Attribute inclusion in DefaultInfo ---
+def _data_attribute_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target = analysistest.target_under_test(env)
+
+    # Check that DefaultInfo contains the extra files
+    files = target[DefaultInfo].files.to_list()
+    basenames = [f.basename for f in files]
+    
+    asserts.true(env, "extra_constraint.xdc" in basenames, "extra_constraint.xdc missing from DefaultInfo files")
+    asserts.true(env, "dummy_util.vhd" in basenames, "dummy_util.vhd missing from DefaultInfo files")
+
+    return analysistest.end(env)
+
+data_attribute_test = analysistest.make(_data_attribute_test_impl)
+
+# --- Test 6: Complex Data Attribute (Filegroups & Files) ---
+def _complex_data_attribute_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target = analysistest.target_under_test(env)
+
+    # Check that DefaultInfo contains all the extra files (from filegroups and direct files)
+    files = target[DefaultInfo].files.to_list()
+    basenames = [f.basename for f in files]
+    
+    asserts.true(env, "extra_constraint.xdc" in basenames, "extra_constraint.xdc missing from DefaultInfo files")
+    asserts.true(env, "vivado.tcl" in basenames, "vivado.tcl missing from DefaultInfo files")
+    asserts.true(env, "meta_data.json" in basenames, "meta_data.json missing from DefaultInfo files")
+    asserts.true(env, "dummy_util.vhd" in basenames, "dummy_util.vhd missing from DefaultInfo files")
+
+    return analysistest.end(env)
+
+complex_data_attribute_test = analysistest.make(_complex_data_attribute_test_impl)
+
 # --- Macro to define the test suite ---
 def vhdl_rules_test_suite(name):
     
@@ -188,6 +222,60 @@ def vhdl_rules_test_suite(name):
         target_under_test = ":test_target_translate",
     )
 
+    # 5. Setup for Data Attribute Test
+    vhdl_library(
+        name = "test_target_data",
+        library_name = "data_lib",
+        vhdl_version = "2008",
+        srcs = ["dummy_util.vhd"],
+        data = ["extra_constraint.xdc"],
+        tags = ["manual"],
+    )
+    data_attribute_test(
+        name = "data_attribute_test",
+        target_under_test = ":test_target_data",
+    )
+
+    vhdl_module(
+        name = "test_module_data",
+        entity_name = "data_entity",
+        srcs = ["dummy_util.vhd"],
+        data = ["extra_constraint.xdc"],
+        tags = ["manual"],
+    )
+    data_attribute_test(
+        name = "module_data_attribute_test",
+        target_under_test = ":test_module_data",
+    )
+
+    # 6. Setup for Complex Data Attribute Test
+    native.filegroup(
+        name = "test_constraints_fg",
+        srcs = ["extra_constraint.xdc"],
+        tags = ["manual"],
+    )
+    native.filegroup(
+        name = "test_vivado_script_fg",
+        srcs = ["vivado.tcl"],
+        tags = ["manual"],
+    )
+    vhdl_library(
+        name = "test_target_complex_data",
+        library_name = "complex_data_lib",
+        vhdl_version = "2008",
+        srcs = ["dummy_util.vhd"],
+        data = [
+            ":test_constraints_fg",
+            ":test_vivado_script_fg",
+            "meta_data.json",
+        ],
+        tags = ["manual"],
+    )
+    complex_data_attribute_test(
+        name = "complex_data_attribute_test",
+        target_under_test = ":test_target_complex_data",
+    )
+
     # Main test suite entry point
     native.test_suite(
         name = name,
@@ -196,5 +284,8 @@ def vhdl_rules_test_suite(name):
             ":merge_work_test",
             ":module_deps_test",
             ":translate_test",
+            ":data_attribute_test",
+            ":module_data_attribute_test",
+            ":complex_data_attribute_test",
         ],
     )

@@ -127,7 +127,7 @@ def _vhdl_library_impl(ctx):
         merge_work_lib = ctx.attr.merge_work_lib
     )
 
-    all_files = depset(transitive = [l.sources for l in libs.values()])
+    all_files = depset(ctx.files.data, transitive = [l.sources for l in libs.values()])
     return [
         VhdlLibraryInfo(libraries = libs),
         DefaultInfo(files = all_files)
@@ -158,7 +158,7 @@ def _vhdl_module_impl(ctx):
         transitive = transitive_entities
     )
 
-    all_files = depset(transitive = [l.sources for l in libs.values()])
+    all_files = depset(ctx.files.data, transitive = [l.sources for l in libs.values()])
 
     return [
         VhdlLibraryInfo(libraries = libs),
@@ -177,6 +177,10 @@ _COMMON_ATTRS = {
     "library_name": attr.string(default = "work"),
     "vhdl_version": attr.string(default = DEFAULT_VHDL_VERSION, values = VHDL_VERSIONS),
     "deps": attr.label_list(providers = [VhdlLibraryInfo]),
+    "data": attr.label_list(
+        allow_files = True,
+        doc = "Extra files to package (e.g. constraints, templates) included in the DefaultInfo provider.",
+    ),
 }
 
 vhdl_library = rule(
