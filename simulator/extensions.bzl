@@ -9,7 +9,48 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+# ==============================================================================
+# Default toolchains
+# ==============================================================================
+
+_DEFAULT_TOOLS = [
+    struct(
+        name = "ghdl_6_0_mcode",
+        type = "ghdl",
+        version = "6.0",
+        backend = "mcode",
+        url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz",
+        sha256 = "30d6a977b8456d140bbafecbbe64b1947a3d92eeae8f5e6d9f528a174f9566e7",
+        strip_prefix = "ghdl-mcode-6.0.0-ubuntu24.04-x86_64",
+        os = "linux",
+        arch = "x86_64",
+        is_default = True,
+    ),
+    struct(
+        name = "ghdl_7_0_mcode",
+        type = "ghdl",
+        version = "7.0.0.dev",
+        backend = "mcode",
+        url = "https://github.com/ghdl/ghdl/releases/download/nightly/ghdl-mcode-7.0.0-dev-ubuntu24.04-x86_64.tar.gz",
+        sha256 = "2f8744c1c3c646849b74d6ec1bb40c460b0ff3b79f72fef7326d088ec5dd7417",
+        strip_prefix = "ghdl-mcode-7.0.0-dev-ubuntu24.04-x86_64",
+        os = "linux",
+        arch = "x86_64",
+        is_default = False,
+    ),
+    struct(
+        name = "ghdl_6_0_llvm",
+        type = "ghdl",
+        version = "6.0",
+        backend = "llvm",
+        url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-llvm-6.0.0-ubuntu24.04-x86_64.tar.gz",
+        sha256 = "e0064cd3d1569e7fca27b186b0d71e80c087de90db4e466ed77dc669a574d8bc",
+        strip_prefix = "ghdl-llvm-6.0.0-ubuntu24.04-x86_64",
+        os = "linux",
+        arch = "x86_64",
+        is_default = False,
+    ),
+]
 
 # ==============================================================================
 # 1. IMPLEMENTATION REPOSITORIES (Lazy Fetching)
@@ -196,18 +237,18 @@ alias(
 def _vhdl_hub_repo_impl(ctx):
     tools = json.decode(ctx.attr.tools_json)
     default_toolchain = ctx.attr.default_toolchain
-    
+
     registry_content = "TOOLCHAIN_REGISTRY = {\n"
     build_content = _HUB_HEADER
-    
+
     for tool in tools:
         name = tool["name"]
         type = tool["type"]
-        
+
         registry_content += '    "{}": struct(simulator="{}", version="{}", backend="{}"),\n'.format(
             name, type, tool["version"], tool.get("backend", "none")
         )
-        
+
         if type == "ghdl":
             default_rule = ""
             if name == default_toolchain:
@@ -227,7 +268,7 @@ toolchain(
     ],
 )
                 """.format(name = name, os = tool["os"], arch = tool["arch"])
-            
+
             build_content += _GHDL_TC_TEMPLATE.format(
                 name = name,
                 version = tool["version"],
@@ -254,7 +295,7 @@ toolchain(
     ],
 )
                 """.format(name = name, os = tool["os"], arch = tool["arch"])
-                
+
             build_content += _NVC_TC_TEMPLATE.format(
                 name = name,
                 version = tool["version"],
@@ -262,10 +303,10 @@ toolchain(
                 arch = tool["arch"],
                 default_rule = default_rule,
             )
-            
+
     registry_content += "}\n\n"
     registry_content += 'DEFAULT_TOOLCHAIN = "{}"\n'.format(default_toolchain)
-    
+
     ctx.file("registry.bzl", registry_content)
     ctx.file("BUILD", build_content)
 
@@ -280,6 +321,10 @@ vhdl_hub_repo = repository_rule(
 # ==============================================================================
 # 3. TAG CLASSES
 # ==============================================================================
+
+_defaults_tag = tag_class(
+    attrs = {},
+)
 
 _ghdl_tag = tag_class(
     attrs = {
@@ -320,27 +365,64 @@ _nvc_local_tag = tag_class(
 )
 
 # ==============================================================================
-# 4. IMPLEMENTATION DE L'EXTENSION
+# 4. IMPLEMENTATION
 # ==============================================================================
 
 def _vhdl_extension_impl(ctx):
     tools = []
     default_toolchain = ""
+    defined_names = {}
 
     for mod in ctx.modules:
+        # check if default toolchains are requested
+        if mod.tags.defaults:
+            for tool in _DEFAULT_TOOLS:
+                if tool.name in defined_names:
+                    continue
+                defined_names[tool.name] = True
+
+                if tool.is_default:
+                    if default_toolchain:
+                        fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
+                    default_toolchain = tool.name
+
+                if tool.type == "ghdl":
+                    ghdl_repository(
+                        name = tool.name,
+                        url = tool.url,
+                        sha256 = tool.sha256,
+                        strip_prefix = tool.strip_prefix,
+                    )
+                    tools.append({
+                        "name": tool.name,
+                        "type": "ghdl",
+                        "version": tool.version,
+                        "backend": tool.backend,
+                        "url": tool.url,
+                        "sha256": tool.sha256,
+                        "strip_prefix": tool.strip_prefix,
+                        "os": tool.os,
+                        "arch": tool.arch,
+                    })
+
+        # Handle GHDL toolchain specified by the user
         for tool in mod.tags.ghdl:
+            if tool.name in defined_names:
+                fail("Toolchain '{}' defined multiple times.".format(tool.name))
+            defined_names[tool.name] = True
+
             if tool.is_default:
                 if default_toolchain:
                     fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
                 default_toolchain = tool.name
-            
+
             ghdl_repository(
                 name = tool.name,
                 url = tool.url,
                 sha256 = tool.sha256,
                 strip_prefix = tool.strip_prefix,
             )
-            
+
             tools.append({
                 "name": tool.name,
                 "type": "ghdl",
@@ -353,7 +435,12 @@ def _vhdl_extension_impl(ctx):
                 "arch": tool.arch,
             })
 
+        # Handle NVC toolchain specified by the user
         for tool in mod.tags.nvc:
+            if tool.name in defined_names:
+                fail("Toolchain '{}' defined multiple times.".format(tool.name))
+            defined_names[tool.name] = True
+
             if tool.is_default:
                 if default_toolchain:
                     fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
@@ -365,7 +452,7 @@ def _vhdl_extension_impl(ctx):
                 sha256 = tool.sha256,
                 strip_prefix = tool.strip_prefix,
             )
-            
+
             tools.append({
                 "name": tool.name,
                 "type": "nvc",
@@ -377,7 +464,12 @@ def _vhdl_extension_impl(ctx):
                 "arch": tool.arch,
             })
 
+        # Handle NVC local toolchain specified by the user
         for tool in mod.tags.nvc_local:
+            if tool.name in defined_names:
+                fail("Toolchain '{}' defined multiple times.".format(tool.name))
+            defined_names[tool.name] = True
+
             if tool.is_default:
                 if default_toolchain:
                     fail("Only one simulator can be defined as default. Found both '{}' and '{}'".format(default_toolchain, tool.name))
@@ -409,6 +501,7 @@ def _vhdl_extension_impl(ctx):
 vhdl_toolchains = module_extension(
     implementation = _vhdl_extension_impl,
     tag_classes = {
+        "defaults": _defaults_tag,
         "ghdl": _ghdl_tag,
         "nvc": _nvc_tag,
         "nvc_local": _nvc_local_tag,

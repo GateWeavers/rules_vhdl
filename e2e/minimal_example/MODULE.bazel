@@ -7,6 +7,8 @@ local_path_override(
 )
 
 vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+vhdl_toolchains.defaults()
+
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
 register_toolchains(

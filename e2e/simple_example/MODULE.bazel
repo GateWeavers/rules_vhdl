@@ -30,6 +30,10 @@ use_repo(uv, "pypi")
 vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
+# load default simulator from @gateweavers_rules_vhdl
+vhdl_toolchains.defaults()
+
+# Declare a new ghdl toolchain
 vhdl_toolchains.ghdl(
     name = "local_ghdl_6_0_mcode",
     version = "6.0",

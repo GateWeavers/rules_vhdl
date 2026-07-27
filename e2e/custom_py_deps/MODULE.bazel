@@ -35,6 +35,9 @@ register_toolchains("@uv//:all")
 vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
+# load default simulator from @gateweavers_rules_vhdl
+vhdl_toolchains.defaults()
+
 register_toolchains(
     "@vhdl_toolchains//:all",
 )
