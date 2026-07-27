@@ -31,6 +31,11 @@ vhdl_flag(
     build_setting_default = "default",
 )
 
+vhdl_flag(
+    name = "selected_toolchain",
+    build_setting_default = "none",
+)
+
 config_setting(
     name = "simulator_ghdl",
     flag_values = {":simulator": "ghdl"},

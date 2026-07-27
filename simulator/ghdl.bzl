@@ -16,8 +16,6 @@ This module manages the GHDL hermetic toolchain and provides the mechanism
 to transition simulator flags based on target attributes or explicit selection.
 """
 
-load("@vhdl_toolchains//:registry.bzl", "TOOLCHAIN_REGISTRY", "DEFAULT_TOOLCHAIN")
-
 GhdlToolchainInfo = provider(
     doc = "Provider for hermetic GHDL toolchain details.",
     fields = {
@@ -89,6 +87,7 @@ def _ghdl_transition_impl(settings, attr):
     simulator_type = "ghdl"
     version = "default"
     backend = "default"
+    selected_toolchain = "none"
 
     # Use values from attributes if provided
     if hasattr(attr, "tool_simulator") and attr.tool_simulator:
@@ -98,37 +97,19 @@ def _ghdl_transition_impl(settings, attr):
     if hasattr(attr, "tool_backend") and attr.tool_backend:
         backend = attr.tool_backend
 
-    selected_repo = ""
+    # Extract target name from explicit simulator target label
     if hasattr(attr, "simulator") and attr.simulator:
         tc_label = str(attr.simulator)
         if "//:" in tc_label:
             parts = tc_label.split("//:")
             repo_part = parts[0].lstrip("@").replace("+", "").split("~")[-1]
-            target_part = parts[1]
-
-            if repo_part == "vhdl_toolchains":
-                if target_part == "default":
-                    selected_repo = DEFAULT_TOOLCHAIN
-                else:
-                    selected_repo = target_part
-            else:
-                # Direct repo access (backward compatibility or external)
-                selected_repo = repo_part
-
-    if selected_repo:
-
-        for key in TOOLCHAIN_REGISTRY.keys():
-            if key in selected_repo:
-                config = TOOLCHAIN_REGISTRY[key]
-                simulator_type = config.simulator
-                version = config.version
-                backend = config.backend
-                break
+            selected_toolchain = parts[1]
 
     return {
         "@gateweavers_rules_vhdl//vhdl/config:simulator": simulator_type,
         "@gateweavers_rules_vhdl//vhdl/config:version": version,
         "@gateweavers_rules_vhdl//vhdl/config:backend": backend,
+        "@gateweavers_rules_vhdl//vhdl/config:selected_toolchain": selected_toolchain,
     }
 
 vhdl_sim_config_transition = transition(
@@ -138,6 +119,7 @@ vhdl_sim_config_transition = transition(
         "@gateweavers_rules_vhdl//vhdl/config:simulator",
         "@gateweavers_rules_vhdl//vhdl/config:version",
         "@gateweavers_rules_vhdl//vhdl/config:backend",
+        "@gateweavers_rules_vhdl//vhdl/config:selected_toolchain",
     ],
 )
 

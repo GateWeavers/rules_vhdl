@@ -129,6 +129,8 @@ local_nvc_repository = repository_rule(
 _HUB_HEADER = """
 package(default_visibility = ["//visibility:public"])
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
 # Matchers pour les valeurs par défaut
 config_setting(
     name = "match_version_default",
@@ -138,6 +140,19 @@ config_setting(
 config_setting(
     name = "match_backend_default",
     flag_values = {"@gateweavers_rules_vhdl//vhdl/config:backend": "default"},
+)
+
+config_setting(
+    name = "match_selected_toolchain_none",
+    flag_values = {"@gateweavers_rules_vhdl//vhdl/config:selected_toolchain": "none"},
+)
+
+selects.config_setting_group(
+    name = "match_default_resolved",
+    match_all = [
+        ":match_version_default",
+        ":match_selected_toolchain_none",
+    ],
 )
 """
 
@@ -168,14 +183,39 @@ config_setting(
     flag_values = {{"@gateweavers_rules_vhdl//vhdl/config:backend": "{backend}"}},
 )
 
+# 1. Matcher when selected dynamically (AND logic)
+selects.config_setting_group(
+    name = "{name}_match_implicit",
+    match_all = [
+        ":{name}_match_simulator",
+        ":{name}_match_version",
+        ":{name}_match_backend",
+    ],
+)
+
+# 2. Matcher when selected explicitly by label
+config_setting(
+    name = "{name}_match_explicit",
+    flag_values = {{
+        "@gateweavers_rules_vhdl//vhdl/config:selected_toolchain": "{name}",
+    }},
+)
+
+# 3. Combined matcher (OR logic)
+selects.config_setting_group(
+    name = "{name}_match_resolved",
+    match_any = [
+        ":{name}_match_implicit",
+        ":{name}_match_explicit",
+    ],
+)
+
 toolchain(
     name = "{name}_toolchain",
     toolchain = ":{name}_impl",
     toolchain_type = "@gateweavers_rules_vhdl//simulator:toolchain_type",
     target_settings = [
-        ":{name}_match_simulator",
-        ":{name}_match_version",
-        ":{name}_match_backend",
+        ":{name}_match_resolved",
     ],
     exec_compatible_with = [
         "@platforms//os:{os}",
@@ -212,13 +252,38 @@ config_setting(
     flag_values = {{"@gateweavers_rules_vhdl//vhdl/config:simulator": "nvc"}},
 )
 
+# 1. Matcher when selected dynamically (AND logic)
+selects.config_setting_group(
+    name = "{name}_match_implicit",
+    match_all = [
+        ":{name}_match_simulator",
+        ":{name}_match_version",
+    ],
+)
+
+# 2. Matcher when selected explicitly by label
+config_setting(
+    name = "{name}_match_explicit",
+    flag_values = {{
+        "@gateweavers_rules_vhdl//vhdl/config:selected_toolchain": "{name}",
+    }},
+)
+
+# 3. Combined matcher (OR logic)
+selects.config_setting_group(
+    name = "{name}_match_resolved",
+    match_any = [
+        ":{name}_match_implicit",
+        ":{name}_match_explicit",
+    ],
+)
+
 toolchain(
     name = "{name}_toolchain",
     toolchain = ":{name}_impl",
     toolchain_type = "@gateweavers_rules_vhdl//simulator:toolchain_type",
     target_settings = [
-        ":{name}_match_simulator",
-        ":{name}_match_version",
+        ":{name}_match_resolved",
     ],
     exec_compatible_with = [
         "@platforms//os:{os}",
@@ -259,7 +324,7 @@ toolchain(
     toolchain_type = "@gateweavers_rules_vhdl//simulator:toolchain_type",
     target_settings = [
         ":{name}_match_simulator",
-        ":match_version_default",
+        ":match_default_resolved",
         ":match_backend_default",
     ],
     exec_compatible_with = [
@@ -287,7 +352,7 @@ toolchain(
     toolchain_type = "@gateweavers_rules_vhdl//simulator:toolchain_type",
     target_settings = [
         ":{name}_match_simulator",
-        ":match_version_default",
+        ":match_default_resolved",
     ],
     exec_compatible_with = [
         "@platforms//os:{os}",
