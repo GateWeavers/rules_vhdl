@@ -20,7 +20,8 @@ This module provides rules for defining VHDL libraries and modules,
 managing transitive dependencies, and handling VHDL versioning.
 """
 
-load("//simulator:ghdl.bzl", "vhdl_sim_config_transition","map_vhdl_version_to_ghdl_flag")
+load("//simulator:transition.bzl", "vhdl_sim_config_transition")
+load("//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 
 # Constants for VHDL versioning
 VhdlConfigInfo = provider(

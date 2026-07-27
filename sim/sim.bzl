@@ -17,7 +17,8 @@ GHDL or NVC, as well as high-level VUnit integration.
 """
 
 load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
-load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition","map_vhdl_version_to_ghdl_flag")
+load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
+load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 
 def _vhdl_test_impl(ctx):
     toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]

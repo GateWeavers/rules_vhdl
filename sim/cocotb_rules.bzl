@@ -15,7 +15,7 @@ Cocotb 2.0 integration rules for Bazel.
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
-load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
+load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 
 def _cocotb_context_impl(ctx):
     toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]

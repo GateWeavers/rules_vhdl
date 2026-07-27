@@ -77,51 +77,7 @@ ghdl_toolchain = rule(
     doc = "Defines a GHDL hermetic toolchain.",
 )
 
-def _ghdl_transition_impl(settings, attr):
-    """
-    Implementation of the configuration transition for simulators.
 
-    Sets the simulator flags based on rule attributes or explicit hub labels.
-    """
-    # Default values
-    simulator_type = "ghdl"
-    version = "default"
-    backend = "default"
-    selected_toolchain = "none"
-
-    # Use values from attributes if provided
-    if hasattr(attr, "tool_simulator") and attr.tool_simulator:
-        simulator_type = attr.tool_simulator
-    if hasattr(attr, "tool_version") and attr.tool_version:
-        version = attr.tool_version
-    if hasattr(attr, "tool_backend") and attr.tool_backend:
-        backend = attr.tool_backend
-
-    # Extract target name from explicit simulator target label
-    if hasattr(attr, "simulator") and attr.simulator:
-        tc_label = str(attr.simulator)
-        if "//:" in tc_label:
-            parts = tc_label.split("//:")
-            repo_part = parts[0].lstrip("@").replace("+", "").split("~")[-1]
-            selected_toolchain = parts[1]
-
-    return {
-        "@gateweavers_rules_vhdl//vhdl/config:simulator": simulator_type,
-        "@gateweavers_rules_vhdl//vhdl/config:version": version,
-        "@gateweavers_rules_vhdl//vhdl/config:backend": backend,
-        "@gateweavers_rules_vhdl//vhdl/config:selected_toolchain": selected_toolchain,
-    }
-
-vhdl_sim_config_transition = transition(
-    implementation = _ghdl_transition_impl,
-    inputs = [],
-    outputs = [
-        "@gateweavers_rules_vhdl//vhdl/config:simulator",
-        "@gateweavers_rules_vhdl//vhdl/config:version",
-        "@gateweavers_rules_vhdl//vhdl/config:backend",
-        "@gateweavers_rules_vhdl//vhdl/config:selected_toolchain",
-    ],
-)
 
 def map_vhdl_version_to_ghdl_flag(version):
     if version == "2008": return "08"

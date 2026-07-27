@@ -18,7 +18,7 @@ VUnit simulations hermetically within Bazel.
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
 load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
-load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "vhdl_sim_config_transition")
+load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 
 # --- LE TEMPLATE PYTHON ---
 _RUNNER_TEMPLATE = """
