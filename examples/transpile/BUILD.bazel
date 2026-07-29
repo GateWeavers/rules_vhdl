@@ -1,0 +1,113 @@
+#  Copyright 2026 Nocilis
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#      http://www.apache.org/licenses/LICENSE-2.0
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+load("//vhdl:defs.bzl", "vhdl_library", "vhdl_translate", "vhdl_wrapper", "vhdl_translate_and_verify")
+
+package(default_visibility = ["//visibility:public"])
+
+vhdl_library(
+    name = "record_io_lib",
+    srcs = ["vhdl/record_io.vhd"],
+    library_name = "work",
+)
+
+vhdl_translate(
+    name = "record_io_translated_preserved",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    preserve_ports = True,
+)
+
+vhdl_translate(
+    name = "record_io_translated_raw",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    preserve_ports = False,
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
+)
+
+vhdl_library(
+    name = "interfaces_2019_lib",
+    srcs = ["vhdl/interfaces_2019.vhd"],
+    library_name = "work",
+    vhdl_version = "2019",
+)
+
+vhdl_translate(
+    name = "interfaces_2019_translated",
+    src = ":interfaces_2019_lib",
+    entity_name = "test_view",
+    preserve_ports = False,
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
+)
+
+vhdl_library(
+    name = "flat_io_lib",
+    srcs = ["vhdl/flat_io.vhd"],
+    library_name = "work",
+    deps = [":record_io_lib"],
+)
+
+vhdl_wrapper(
+    name = "record_io_normal_wrapper",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    reverse = False,
+)
+
+vhdl_library(
+    name = "record_io_normal_wrapper_lib",
+    srcs = [":record_io_normal_wrapper"],
+    deps = [":record_io_lib"],
+)
+
+vhdl_wrapper(
+    name = "flat_io_reverse_wrapper",
+    src = ":flat_io_lib",
+    entity_name = "flat_io_test",
+    reverse = True,
+)
+
+vhdl_library(
+    name = "flat_io_reverse_wrapper_lib",
+    srcs = [
+        ":flat_io_reverse_wrapper",
+    ],
+    deps = [
+        ":flat_io_lib",
+        ":record_io_lib", # for my_types package
+    ],
+)
+
+vhdl_translate(
+    name = "record_io_normal_wrapper_translated",
+    src = ":record_io_normal_wrapper_lib",
+    entity_name = "record_io_test_wrapper",
+    preserve_ports = True,
+)
+
+vhdl_translate(
+    name = "flat_io_reverse_wrapper_translated",
+    src = ":flat_io_reverse_wrapper_lib",
+    entity_name = "flat_io_test_wrapper",
+    preserve_ports = True,
+)
+
+vhdl_translate_and_verify(
+    name = "record_io_equivalence",
+    src = ":record_io_lib",
+    entity_name = "record_io_test",
+    preserve_ports = False,
+    testbench_srcs = ["vhdl/tb_record_io.vhd"],
+    testbench_entity = "tb_record_io",
+    test_type = "vhdl",
+    simulator = "@vhdl_toolchains//:ghdl_7_0_mcode",
+)

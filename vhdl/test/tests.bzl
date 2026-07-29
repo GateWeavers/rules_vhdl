@@ -13,7 +13,8 @@
 #    limitations under the License.
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "analysistest")
-load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_module", "vhdl_translate", "VhdlLibraryInfo", "VhdlModuleInfo")
+load("//vhdl:vhdl.bzl", "vhdl_library", "vhdl_module", "VhdlLibraryInfo", "VhdlModuleInfo")
+load("//vhdl:translation.bzl", "vhdl_translate")
 
 # --- Test 1: Basic Library Creation & Key Generation ---
 def _basic_lib_test_impl(ctx):
