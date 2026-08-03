@@ -1,11 +1,12 @@
 module(
     name = "gateweavers_rules_vhdl",
-    version = "0.1.0",
+    version = "0.1.1",
 )
 
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "1.7.0")
 bazel_dep(name = "aspect_rules_py", version = "1.11.5")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
 
 ####################
 # VHDL TOOLCHAINS
@@ -51,11 +52,9 @@ register_toolchains(
     dev_dependency = True,
 )
 
-#------------------------------
+#####################
 # DEV DEPENDENCIES
-#------------------------------
-
-bazel_dep(name = "bazel_skylib", version = "1.9.0")
+#####################
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 python.toolchain(python_version = "3.12", is_default = True)
