@@ -13,6 +13,17 @@
 Module extension for registering formal verification toolchains (SymbiYosys, Yosys, solvers).
 """
 
+_DEFAULT_TOOLS = [
+    struct(
+        name = "oss_cad_suite",
+        url = "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2026-07-21/oss-cad-suite-linux-x64-20260721.tgz",
+        sha256 = "6efd4012620df0c2305844dfdf9dab7a31763753b9792d6cbb1dcd8327e99d49",
+        strip_prefix = "oss-cad-suite",
+        os = "linux",
+        arch = "x86_64",
+    )
+]
+
 def _oss_cad_suite_repo_impl(ctx):
     ctx.download_and_extract(
         url = ctx.attr.url,
@@ -144,6 +155,10 @@ formal_hub_repo = repository_rule(
     },
 )
 
+_defaults_tag = tag_class(
+    attrs = {},
+)
+
 _oss_cad_suite_tag = tag_class(
     attrs = {
         "name": attr.string(mandatory = True),
@@ -174,9 +189,30 @@ _mock_formal_tag = tag_class(
 
 def _formal_extension_impl(ctx):
     tools = []
+    defined_names = {}
 
     for mod in ctx.modules:
+        if mod.tags.defaults:
+            for tool in _DEFAULT_TOOLS:
+                if tool.name in defined_names:
+                    continue
+                defined_names[tool.name] = True
+                oss_cad_suite_repository(
+                    name = tool.name,
+                    url = tool.url,
+                    sha256 = tool.sha256,
+                    strip_prefix = tool.strip_prefix,
+                )
+                tools.append({
+                    "name": tool.name,
+                    "os": tool.os,
+                    "arch": tool.arch,
+                })
+
         for tool in mod.tags.oss_cad_suite:
+            if tool.name in defined_names:
+                fail("Toolchain '{}' defined multiple times.".format(tool.name))
+            defined_names[tool.name] = True
             oss_cad_suite_repository(
                 name = tool.name,
                 url = tool.url,
@@ -190,6 +226,9 @@ def _formal_extension_impl(ctx):
             })
 
         for tool in mod.tags.local:
+            if tool.name in defined_names:
+                fail("Toolchain '{}' defined multiple times.".format(tool.name))
+            defined_names[tool.name] = True
             local_formal_repository(
                 name = tool.name,
                 path = tool.path,
@@ -201,6 +240,9 @@ def _formal_extension_impl(ctx):
             })
 
         for tool in mod.tags.mock:
+            if tool.name in defined_names:
+                fail("Toolchain '{}' defined multiple times.".format(tool.name))
+            defined_names[tool.name] = True
             mock_formal_repository(
                 name = tool.name,
             )
@@ -222,6 +264,7 @@ def _formal_extension_impl(ctx):
 formal_toolchains = module_extension(
     implementation = _formal_extension_impl,
     tag_classes = {
+        "defaults": _defaults_tag,
         "oss_cad_suite": _oss_cad_suite_tag,
         "local": _local_formal_tag,
         "mock": _mock_formal_tag,

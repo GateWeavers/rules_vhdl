@@ -8,6 +8,7 @@ local_path_override(
 
 # Load formal_toolchains
 formal_toolchains = use_extension("@gateweavers_rules_vhdl//formal:extensions.bzl", "formal_toolchains")
+formal_toolchains.defaults()
 use_repo(formal_toolchains, "formal_toolchains")
 
 register_toolchains(
