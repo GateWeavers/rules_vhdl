@@ -45,8 +45,17 @@ vhdl_toolchains.nvc_local(
 )
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
+formal_toolchains = use_extension("//formal:extensions.bzl", "formal_toolchains")
+formal_toolchains.oss_cad_suite(
+    name = "oss_cad_suite",
+    url = "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2026-07-21/oss-cad-suite-linux-x64-20260721.tgz",
+    sha256 = "6efd4012620df0c2305844dfdf9dab7a31763753b9792d6cbb1dcd8327e99d49",
+)
+use_repo(formal_toolchains, "formal_toolchains")
+
 register_toolchains(
     "@vhdl_toolchains//:all",
+    "@formal_toolchains//:all",
     "//simulator:mock_ghdl_toolchain",
     "//simulator:mock_nvc_toolchain",
     dev_dependency = True,

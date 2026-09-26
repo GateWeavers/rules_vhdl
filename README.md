@@ -11,6 +11,7 @@ Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.
 - **VHDL Adapter Wrappers**: Bidirectionally bridge between modern VHDL record-based ports and flattened ports for backward compatibility or synthesis.
 - **VUnit Integration**: Native support for VUnit testbenches and custom Python runners.
 - **Cocotb 2.0 Support**: Modern Python-based verification using the new `cocotb_tools` runner API.
+- **Formal Verification**: Native SymbiYosys (`sby`), Yosys (GHDL plugin), and VHDL PSL property verification support (`vhdl_formal_test`, `vhdl_bmc_test`, `vhdl_cover_test`).
 - **Automated Build Generation**: Custom Gazelle extension that scans VHDL source code to generate and update Bazel rules automatically.
 - **Bzlmod Ready**: Modern Bazel dependency management out of the box.
 - **Advanced Python Support**: Easily add custom Python libraries (like `crc`, `numpy`) to your simulation environment.
@@ -136,7 +137,21 @@ Run the test:
 bazel test //path/to:tb_dff
 ```
 
-### 5. Translating VHDL (`vhdl_translate`)
+### 5. Running Formal Verification (`vhdl_bmc_test`, `vhdl_cover_test`)
+
+```starlark
+load("@gateweavers_rules_vhdl//formal:defs.bzl", "vhdl_bmc_test", "vhdl_cover_test")
+
+vhdl_bmc_test(
+    name = "counter_bmc",
+    dut = ":counter_lib",
+    top_entity = "counter",
+    psl_srcs = ["properties/counter.psl"],
+    depth = 20,
+)
+```
+
+### 6. Translating VHDL (`vhdl_translate`)
 
 Translates a VHDL 2008/2019 target to VHDL 93 by compiling it and running synthesis using GHDL (`--synth`).
 
@@ -151,7 +166,7 @@ vhdl_translate(
 )
 ```
 
-### 6. Translating and Verifying (`vhdl_translate_and_verify`)
+### 7. Translating and Verifying (`vhdl_translate_and_verify`)
 
 Translates a target design to VHDL 93 and automatically defines two parallel test targets (`_orig_test` and `_translated_test`) using a user-specified testbench (VHDL, VUnit, or Cocotb) to verify functional equivalence. If `preserve_ports = False`, it automatically generates a record-exposure wrapper to bind the flat VHDL 93 design to the record-based testbench.
 
@@ -169,7 +184,7 @@ vhdl_translate_and_verify(
 )
 ```
 
-### 7. Generating Adapters/Wrappers (`vhdl_wrapper`)
+### 8. Generating Adapters/Wrappers (`vhdl_wrapper`)
 
 Generates a VHDL adapter wrapper to bridge between record-based and flattened ports:
 *   **Normal Mode (`reverse = False`)**: Generates a VHDL 93 wrapper with flattened ports wrapping a VHDL 2008 record-based entity.

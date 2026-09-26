@@ -85,6 +85,27 @@ Runs a simulation using the [Cocotb](https://www.cocotb.org/) framework (version
 
 ---
 
+## Formal Verification Rules (`@gateweavers_rules_vhdl//formal`)
+
+### `vhdl_formal_test`
+Executes formal verification on a VHDL design using SymbiYosys (`sby`), Yosys (GHDL plugin), and VHDL PSL assertions. Auto-generates the `.sby` configuration file from target attributes.
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `dut` | `label` | Mandatory | The VHDL target under test (`vhdl_library` or `vhdl_module`). |
+| `top_entity` | `string` | Mandatory | The top-level VHDL entity name to verify. |
+| `psl_srcs` | `label_list` | `[]` | Optional external `.psl` or `.vhd` formal property files. |
+| `mode` | `string` | `"bmc"` | Formal mode (`"bmc"`, `"cover"`, `"prove"`, `"live"`). |
+| `engine` | `string` | `"smtbmc yices"` | SBY solver engine string (e.g., `"smtbmc yices"`, `"smtbmc z3"`). |
+| `depth` | `int` | `20` | Cycle depth bound for formal checking. |
+| `sby_template` | `label` | `None` | Optional custom `.sby` template file. |
+| `sby_options` | `string_dict` | `{}` | Key-value pairs added to the `[options]` section of the `.sby` file. |
+
+### Helper Macros (`vhdl_bmc_test`, `vhdl_cover_test`, `vhdl_prove_test`)
+Convenience wrappers around `vhdl_formal_test` with pre-set `mode` attribute values (`bmc`, `cover`, `prove`).
+
+---
+
 ## Toolchain Management (`@gateweavers_rules_vhdl//simulator`)
 
 ### `vhdl_toolchains` (Module Extension)

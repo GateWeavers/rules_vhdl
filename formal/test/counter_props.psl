@@ -1,0 +1,6 @@
+-- PSL Properties file for counter
+vunit counter_psl_inst(counter(rtl)) {
+    default clock is rising_edge(clk);
+    property rst_clears_count is always (rst = '1' -> next (count = "00000000"));
+    assert rst_clears_count;
+}

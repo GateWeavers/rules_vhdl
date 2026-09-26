@@ -1,0 +1,11 @@
+-- PSL Verification Suite for Counter
+vunit counter_formal(counter(rtl)) {
+    default clock is rising_edge(clk);
+
+    -- Property 1: Enable must freeze counter when disabled
+    property hold_when_disabled is always (rst = '0' and en = '0' -> next (count = prev(count)));
+    assert hold_when_disabled;
+
+    -- Cover 1: Reaching max value
+    cover {rst = '0'; en = '1'[*5]};
+}
