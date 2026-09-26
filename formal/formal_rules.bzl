@@ -103,11 +103,25 @@ def _vhdl_formal_test_impl(ctx):
 
     # Create test execution script
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
+    script_path_export = "export PATH=$(pwd)/$(dirname {}):$PATH".format(sby_bin_path) if "/" in sby_bin_path else "# using system PATH"
+
     script_content = [
         "#!/bin/bash",
-        "set -e",
-        "export PATH=$(pwd)/$(dirname {}):$PATH".format(sby_bin_path) if "/" in sby_bin_path else "# using system PATH",
-        "{} -f {}".format(sby_bin_path, sby_config_file.short_path),
+        "export PYTHONDONTWRITEBYTECODE=1",
+        script_path_export,
+        "",
+        "SBY_STATUS=0",
+        "{} -f {} || SBY_STATUS=$?".format(sby_bin_path, sby_config_file.short_path),
+        "",
+        "# Copy SBY generated VCD trace to test undeclared outputs if present",
+        'VCD_FILE=$(find . -name "*.vcd" 2>/dev/null | head -n 1)',
+        'if [ -n "$VCD_FILE" ] && [ -f "$VCD_FILE" ] && [ -n "$TEST_UNDECLARED_OUTPUTS_DIR" ]; then',
+        '    echo "SBY generated VCD trace: $VCD_FILE"',
+        '    cp "$VCD_FILE" "$TEST_UNDECLARED_OUTPUTS_DIR/trace.vcd"',
+        '    cp "$VCD_FILE" "$TEST_UNDECLARED_OUTPUTS_DIR/{}.vcd"'.format(ctx.label.name),
+        'fi',
+        "",
+        'exit $SBY_STATUS',
     ]
 
     ctx.actions.write(

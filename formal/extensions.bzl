@@ -23,7 +23,22 @@ def _oss_cad_suite_repo_impl(ctx):
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "sby_bin", srcs = ["bin/sby"])
 filegroup(name = "yosys_bin", srcs = ["bin/yosys"])
-filegroup(name = "extra_files", srcs = glob(["**"], allow_empty = True))
+filegroup(
+    name = "extra_files",
+    srcs = glob(
+        [
+            "bin/**",
+            "lib/**",
+            "libexec/**",
+            "share/yosys/python3/*.py",
+            "share/yosys/plugins/*",
+            "share/yosys/include/*",
+            "share/yosys/techlibs/*",
+
+        ],
+        allow_empty = True,
+    ),
+)
 """)
 
 oss_cad_suite_repository = repository_rule(
