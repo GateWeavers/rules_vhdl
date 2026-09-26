@@ -19,6 +19,7 @@ def _oss_cad_suite_repo_impl(ctx):
         sha256 = ctx.attr.sha256,
         strip_prefix = ctx.attr.strip_prefix,
     )
+    # TODO try to include only the mandatary files for sby and eqy.
     ctx.file("BUILD", """
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "sby_bin", srcs = ["bin/sby"])

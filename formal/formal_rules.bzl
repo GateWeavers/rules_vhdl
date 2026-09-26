@@ -32,21 +32,13 @@ def _vhdl_formal_test_impl(ctx):
         vhdl_files.append(psl_f)
         transitive_runfiles.append(psl_f)
 
-    # Check for toolchain or fallback to system tools
-    sby_bin_path = "sby"
-    yosys_bin_path = "yosys"
-    extra_tool_files = depset()
-
-    toolchain_key = "@gateweavers_rules_vhdl//formal:toolchain_type"
-    if toolchain_key in ctx.toolchains and ctx.toolchains[toolchain_key] != None:
-        tc = ctx.toolchains[toolchain_key]
-        if hasattr(tc, "formal_info"):
-            f_info = tc.formal_info
-            sby_bin_path = f_info.sby_binary.short_path
-            yosys_bin_path = f_info.yosys_binary.short_path
-            extra_tool_files = f_info.formal_files
-            transitive_runfiles.append(f_info.sby_binary)
-            transitive_runfiles.append(f_info.yosys_binary)
+    # get the binaries from the toolchain provider
+    f_info = ctx.toolchains["@gateweavers_rules_vhdl//formal:toolchain_type"].formal_info
+    sby_bin_path = f_info.sby_binary.short_path
+    yosys_bin_path = f_info.yosys_binary.short_path
+    extra_tool_files = f_info.formal_files
+    transitive_runfiles.append(f_info.sby_binary)
+    transitive_runfiles.append(f_info.yosys_binary)
 
     # Generate .sby config file
     sby_config_file = ctx.actions.declare_file(ctx.label.name + ".sby")
@@ -105,12 +97,10 @@ def _vhdl_formal_test_impl(ctx):
 
     # Create test execution script
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
-    script_path_export = "export PATH=$(pwd)/$(dirname {}):$PATH".format(sby_bin_path) if "/" in sby_bin_path else "# using system PATH"
 
     script_content = [
         "#!/bin/bash",
         "export PYTHONDONTWRITEBYTECODE=1",
-        script_path_export,
         "",
         "SBY_STATUS=0",
         "{} -f {} || SBY_STATUS=$?".format(sby_bin_path, sby_config_file.short_path),
@@ -144,7 +134,7 @@ def _vhdl_formal_test_impl(ctx):
 vhdl_formal_test = rule(
     implementation = _vhdl_formal_test_impl,
     test = True,
-    toolchains = [config_common.toolchain_type("@gateweavers_rules_vhdl//formal:toolchain_type", mandatory = False)],
+    toolchains = [config_common.toolchain_type("@gateweavers_rules_vhdl//formal:toolchain_type", mandatory = True)],
     attrs = {
         "dut": attr.label(
             providers = [VhdlLibraryInfo],
@@ -215,22 +205,14 @@ def vhdl_prove_test(name, dut, top_entity, **kwargs):
 
 def _vhdl_eqy_test_impl(ctx):
     transitive_runfiles = []
-    
-    # Toolchain resolution
-    eqy_bin_path = "eqy"
-    yosys_bin_path = "yosys"
-    extra_tool_files = depset()
 
-    toolchain_key = "@gateweavers_rules_vhdl//formal:toolchain_type"
-    if toolchain_key in ctx.toolchains and ctx.toolchains[toolchain_key] != None:
-        tc = ctx.toolchains[toolchain_key]
-        if hasattr(tc, "formal_info"):
-            f_info = tc.formal_info
-            eqy_bin_path = f_info.eqy_binary.short_path
-            yosys_bin_path = f_info.yosys_binary.short_path
-            extra_tool_files = f_info.formal_files
-            transitive_runfiles.append(f_info.eqy_binary)
-            transitive_runfiles.append(f_info.yosys_binary)
+    # Toolchain resolution
+    f_info = ctx.toolchains["@gateweavers_rules_vhdl//formal:toolchain_type"].formal_info
+    eqy_bin_path = f_info.eqy_binary.short_path
+    yosys_bin_path = f_info.yosys_binary.short_path
+    extra_tool_files = f_info.formal_files
+    transitive_runfiles.append(f_info.eqy_binary)
+    transitive_runfiles.append(f_info.yosys_binary)
 
     # Collect gold files
     gold_files = []
@@ -300,12 +282,10 @@ def _vhdl_eqy_test_impl(ctx):
 
     # Create execution script
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
-    script_path_export = "export PATH=$(pwd)/$(dirname {}):$PATH".format(eqy_bin_path) if "/" in eqy_bin_path else "# using system PATH"
 
     script_content = [
         "#!/bin/bash",
         "export PYTHONDONTWRITEBYTECODE=1",
-        script_path_export,
         "",
         "{} {}".format(eqy_bin_path, eqy_config_file.short_path),
     ]
@@ -328,7 +308,7 @@ def _vhdl_eqy_test_impl(ctx):
 vhdl_eqy_test = rule(
     implementation = _vhdl_eqy_test_impl,
     test = True,
-    toolchains = [config_common.toolchain_type("@gateweavers_rules_vhdl//formal:toolchain_type", mandatory = False)],
+    toolchains = [config_common.toolchain_type("@gateweavers_rules_vhdl//formal:toolchain_type", mandatory = True)],
     attrs = {
         "gold": attr.label(
             providers = [VhdlLibraryInfo],
