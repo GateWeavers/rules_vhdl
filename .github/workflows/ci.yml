@@ -28,7 +28,7 @@ jobs:
       - name: Test main repo
         run: bazel test //...
 
-      - name: Test local nvc 
+      - name: Test local nvc
         run: bazel test //examples/basic:tb_vunit_nvc_local //examples/basic:tb_nvc_local //examples/basic:tb_nvc_local_easy
 
       - name: Test e2e/minimal_example
@@ -41,4 +41,8 @@ jobs:
 
       - name: Test e2e/custom_py_deps
         working-directory: e2e/custom_py_deps
+        run: bazel test //...
+
+      - name: Test e2e/formal
+        working-directory: e2e/formal
         run: bazel test //...

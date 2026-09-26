@@ -1,0 +1,15 @@
+module(name = "gateweavers_rules_vhdl_e2e_formal")
+
+bazel_dep(name = "gateweavers_rules_vhdl")
+local_path_override(
+    module_name = "gateweavers_rules_vhdl",
+    path = "../..",
+)
+
+# Load formal_toolchains
+formal_toolchains = use_extension("@gateweavers_rules_vhdl//formal:extensions.bzl", "formal_toolchains")
+use_repo(formal_toolchains, "formal_toolchains")
+
+register_toolchains(
+    "@formal_toolchains//:all",
+)
