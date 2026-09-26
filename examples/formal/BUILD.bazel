@@ -10,11 +10,18 @@
 #  limitations under the License.
 
 load("//vhdl:defs.bzl", "vhdl_library")
-load("//formal:defs.bzl", "vhdl_bmc_test", "vhdl_cover_test", "vhdl_formal_test")
+load("//formal:defs.bzl", "vhdl_bmc_test", "vhdl_cover_test", "vhdl_formal_test", "vhdl_eqy_test")
 
 vhdl_library(
     name = "counter_lib",
     srcs = ["vhdl/counter.vhd"],
+    library_name = "work",
+    vhdl_version = "2008",
+)
+
+vhdl_library(
+    name = "counter_revised_lib",
+    srcs = ["vhdl/counter_revised.vhd"],
     library_name = "work",
     vhdl_version = "2008",
 )
@@ -44,4 +51,31 @@ vhdl_formal_test(
     psl_srcs = ["properties/counter.psl"],
     mode = "prove",
     depth = 30,
+)
+
+vhdl_eqy_test(
+    name = "counter_equivalence",
+    gold = ":counter_lib",
+    gate = ":counter_revised_lib",
+    top_entity = "counter",
+    strategy = "sat",
+)
+
+vhdl_bmc_test(
+    name = "counter_bmc_templated",
+    dut = ":counter_lib",
+    top_entity = "counter",
+    psl_srcs = ["properties/counter.psl"],
+    depth = 20,
+    engine = "smtbmc yices",
+    sby_template = "properties/counter.sby.tpl",
+)
+
+vhdl_eqy_test(
+    name = "counter_equivalence_templated",
+    gold = ":counter_lib",
+    gate = ":counter_revised_lib",
+    top_entity = "counter",
+    strategy = "sat",
+    eqy_template = "properties/counter.eqy.tpl",
 )

@@ -98,11 +98,23 @@ Executes formal verification on a VHDL design using SymbiYosys (`sby`), Yosys (G
 | `mode` | `string` | `"bmc"` | Formal mode (`"bmc"`, `"cover"`, `"prove"`, `"live"`). |
 | `engine` | `string` | `"smtbmc yices"` | SBY solver engine string (e.g., `"smtbmc yices"`, `"smtbmc z3"`). |
 | `depth` | `int` | `20` | Cycle depth bound for formal checking. |
-| `sby_template` | `label` | `None` | Optional custom `.sby` template file. |
+| `sby_template` | `label` | `None` | Optional custom `.sby` template file. Supported placeholders: `{TOP_ENTITY}`, `{MODE}`, `{DEPTH}`, `{ENGINE}`, `{FILES}` (newlines-separated source paths), `{BASENAMES}` (space-separated filenames). |
 | `sby_options` | `string_dict` | `{}` | Key-value pairs added to the `[options]` section of the `.sby` file. |
 
 ### Helper Macros (`vhdl_bmc_test`, `vhdl_cover_test`, `vhdl_prove_test`)
 Convenience wrappers around `vhdl_formal_test` with pre-set `mode` attribute values (`bmc`, `cover`, `prove`).
+
+### `vhdl_eqy_test`
+Runs formal equivalence checking on two VHDL designs using EQY.
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `gold` | `label` | Mandatory | The golden (reference) VHDL design library or module target. |
+| `gate` | `label` | Mandatory | The gate-level (synthesized/revised) VHDL design library or module target. |
+| `top_entity` | `string` | Mandatory | The top-level VHDL entity name (must match for both designs). |
+| `strategy` | `string` | `"sat"` | Equivalence strategy (e.g. `"sat"`, `"sby"`). |
+| `eqy_options` | `string_dict`| `{}` | Extra options added to the `[options]` section of the generated `.eqy` file. |
+| `eqy_template` | `label` | `None` | Optional custom `.eqy` template file. Supported placeholders: `{TOP_ENTITY}`, `{STRATEGY}`, `{GOLD_FILES}`, `{GATE_FILES}`. |
 
 ---
 

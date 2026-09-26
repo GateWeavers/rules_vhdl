@@ -368,6 +368,41 @@ vunit_sim(
 )
 ```
 
+### 4. Formal Verification (BMC, Cover, Prove, Equivalence Checking)
+Assert properties and verify equivalence using SymbiYosys, Yosys (GHDL plugin), and EQY.
+- **Location**: `examples/formal`
+
+```starlark
+load("//formal:defs.bzl", "vhdl_bmc_test", "vhdl_cover_test", "vhdl_prove_test", "vhdl_eqy_test")
+
+# Bounded Model Checking (BMC)
+vhdl_bmc_test(
+    name = "counter_bmc",
+    dut = ":counter_lib",
+    top_entity = "counter",
+    psl_srcs = ["properties/counter.psl"],
+    depth = 20,
+)
+
+# Unbounded Proof
+vhdl_prove_test(
+    name = "counter_prove",
+    dut = ":counter_lib",
+    top_entity = "counter",
+    psl_srcs = ["properties/counter.psl"],
+    depth = 30,
+)
+
+# Equivalence Checking between 2 designs
+vhdl_eqy_test(
+    name = "counter_equivalence",
+    gold = ":counter_lib",
+    gate = ":counter_revised_lib",
+    top_entity = "counter",
+    strategy = "sat",
+)
+```
+
 ---
 
 ## License

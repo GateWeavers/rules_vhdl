@@ -9,7 +9,7 @@
 # See https://github.com/bazelbuild/bazel/issues/4603
 # build --symlink_prefix=/
 # the custom prefix must start with bazel- to avoid symlink loop for top targets
-build --symlink_prefix=bazel-build/
+# build --symlink_prefix=bazel-build/
 
 #--output_base=<path> default: see description
  #   If set, specifies the output location to which all build output will be written. Otherwise, the location will be ${OUTPUT_ROOT}/_blaze_${USER}/${MD5_OF_WORKSPACE_ROOT}. Note: If you specify a different option from one to the next Bazel invocation for this value, you'll likely start up a new, additional Bazel server. Bazel starts exactly one server per specified output base. Typically there is one output base per workspace - however, with this option you may have multiple output bases per workspace and thereby run multiple builds for the same client on the same machine concurrently. See 'bazel help shutdown' on how to shutdown a Bazel server.

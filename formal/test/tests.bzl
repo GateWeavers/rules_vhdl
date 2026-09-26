@@ -11,7 +11,7 @@
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "analysistest")
 load("//vhdl:defs.bzl", "vhdl_library")
-load("//formal:defs.bzl", "vhdl_formal_test", "vhdl_bmc_test", "vhdl_cover_test")
+load("//formal:defs.bzl", "vhdl_formal_test", "vhdl_bmc_test", "vhdl_cover_test", "vhdl_eqy_test")
 
 def _formal_test_analysis_impl(ctx):
     env = analysistest.begin(ctx)
@@ -32,6 +32,26 @@ def _formal_test_analysis_impl(ctx):
     return analysistest.end(env)
 
 formal_test_analysis_test = analysistest.make(_formal_test_analysis_impl)
+
+def _eqy_test_analysis_impl(ctx):
+    env = analysistest.begin(ctx)
+    target = analysistest.target_under_test(env)
+
+    # 1. Verify executable is present
+    asserts.true(env, target[DefaultInfo].files_to_run.executable != None, "Executable missing")
+
+    # 2. Verify runfiles include generated .eqy config
+    runfiles = target[DefaultInfo].default_runfiles.files.to_list()
+    has_eqy = False
+    for f in runfiles:
+        if f.basename.endswith(".eqy"):
+            has_eqy = True
+            break
+    asserts.true(env, has_eqy, "Generated .eqy file missing from runfiles")
+
+    return analysistest.end(env)
+
+eqy_test_analysis_test = analysistest.make(_eqy_test_analysis_impl)
 
 def formal_test_suite(name):
     vhdl_library(
@@ -60,10 +80,37 @@ def formal_test_suite(name):
         tags = ["manual"],
     )
 
+    vhdl_bmc_test(
+        name = "test_bmc_template",
+        dut = ":dummy_dut_lib",
+        top_entity = "counter",
+        sby_template = "template.sby",
+        tags = ["manual"],
+    )
+
     vhdl_cover_test(
         name = "test_cover_macro",
         dut = ":dummy_dut_lib",
         top_entity = "counter",
+        tags = ["manual"],
+    )
+
+    vhdl_eqy_test(
+        name = "test_eqy_target",
+        gold = ":dummy_dut_lib",
+        gate = ":dummy_dut_lib",
+        top_entity = "counter",
+        strategy = "sat",
+        tags = ["manual"],
+    )
+
+    vhdl_eqy_test(
+        name = "test_eqy_template_target",
+        gold = ":dummy_dut_lib",
+        gate = ":dummy_dut_lib",
+        top_entity = "counter",
+        strategy = "sat",
+        eqy_template = "template.eqy",
         tags = ["manual"],
     )
 
@@ -78,8 +125,23 @@ def formal_test_suite(name):
     )
 
     formal_test_analysis_test(
+        name = "bmc_template_analysis_test",
+        target_under_test = ":test_bmc_template",
+    )
+
+    formal_test_analysis_test(
         name = "cover_macro_analysis_test",
         target_under_test = ":test_cover_macro",
+    )
+
+    eqy_test_analysis_test(
+        name = "eqy_analysis_test",
+        target_under_test = ":test_eqy_target",
+    )
+
+    eqy_test_analysis_test(
+        name = "eqy_template_analysis_test",
+        target_under_test = ":test_eqy_template_target",
     )
 
     native.test_suite(
@@ -87,6 +149,9 @@ def formal_test_suite(name):
         tests = [
             ":formal_analysis_test",
             ":bmc_macro_analysis_test",
+            ":bmc_template_analysis_test",
             ":cover_macro_analysis_test",
+            ":eqy_analysis_test",
+            ":eqy_template_analysis_test",
         ],
     )

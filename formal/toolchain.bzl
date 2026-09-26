@@ -18,6 +18,7 @@ FormalToolchainInfo = provider(
     fields = {
         "sby_binary": "File pointing to the sby executable.",
         "yosys_binary": "File pointing to the yosys executable with ghdl plugin.",
+        "eqy_binary": "File pointing to the eqy executable.",
         "formal_files": "Depset of supporting files for formal execution.",
     },
 )
@@ -28,6 +29,7 @@ def _formal_toolchain_impl(ctx):
             formal_info = FormalToolchainInfo(
                 sby_binary = ctx.file.sby_binary,
                 yosys_binary = ctx.file.yosys_binary,
+                eqy_binary = ctx.file.eqy_binary,
                 formal_files = depset(ctx.files.extra_files),
             )
         )
@@ -43,6 +45,10 @@ formal_toolchain = rule(
         "yosys_binary": attr.label(
             allow_single_file = True,
             doc = "The Yosys executable.",
+        ),
+        "eqy_binary": attr.label(
+            allow_single_file = True,
+            doc = "The EQY executable.",
         ),
         "extra_files": attr.label_list(
             allow_files = True,

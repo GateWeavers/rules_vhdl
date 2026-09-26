@@ -23,6 +23,7 @@ def _oss_cad_suite_repo_impl(ctx):
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "sby_bin", srcs = ["bin/sby"])
 filegroup(name = "yosys_bin", srcs = ["bin/yosys"])
+filegroup(name = "eqy_bin", srcs = ["bin/eqy"])
 filegroup(
     name = "extra_files",
     srcs = glob(
@@ -62,6 +63,7 @@ def _local_formal_repo_impl(ctx):
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "sby_bin", srcs = ["formal_home/bin/sby"])
 filegroup(name = "yosys_bin", srcs = ["formal_home/bin/yosys"])
+filegroup(name = "eqy_bin", srcs = ["formal_home/bin/eqy"])
 filegroup(name = "extra_files", srcs = glob(["formal_home/bin/**", "formal_home/lib/**", "formal_home/share/**"]))
 """)
 
@@ -75,11 +77,13 @@ local_formal_repository = repository_rule(
 def _mock_formal_repo_impl(ctx):
     ctx.file("bin/sby", "#!/bin/bash\necho 'Mock SBY'\nexit 0\n", executable = True)
     ctx.file("bin/yosys", "#!/bin/bash\necho 'Mock Yosys'\nexit 0\n", executable = True)
+    ctx.file("bin/eqy", "#!/bin/bash\necho 'Mock EQY'\nexit 0\n", executable = True)
     ctx.file("BUILD", """
 package(default_visibility = ["//visibility:public"])
 filegroup(name = "sby_bin", srcs = ["bin/sby"])
 filegroup(name = "yosys_bin", srcs = ["bin/yosys"])
-filegroup(name = "extra_files", srcs = ["bin/sby", "bin/yosys"])
+filegroup(name = "eqy_bin", srcs = ["bin/eqy"])
+filegroup(name = "extra_files", srcs = ["bin/sby", "bin/yosys", "bin/eqy"])
 """)
 
 mock_formal_repository = repository_rule(
@@ -98,6 +102,7 @@ formal_toolchain(
     name = "{name}_impl",
     sby_binary = "@{name}//:sby_bin",
     yosys_binary = "@{name}//:yosys_bin",
+    eqy_binary = "@{name}//:eqy_bin",
     extra_files = ["@{name}//:extra_files"],
 )
 

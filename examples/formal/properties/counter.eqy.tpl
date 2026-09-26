@@ -1,0 +1,14 @@
+[options]
+
+[gold]
+plugin -i ghdl
+ghdl --std=08 {GOLD_FILES} -e {TOP_ENTITY}
+prep -top {TOP_ENTITY}
+
+[gate]
+plugin -i ghdl
+ghdl --std=08 {GATE_FILES} -e {TOP_ENTITY}
+prep -top {TOP_ENTITY}
+
+[strategy {STRATEGY}]
+use {STRATEGY}
