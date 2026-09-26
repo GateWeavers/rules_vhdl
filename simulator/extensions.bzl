@@ -131,7 +131,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
-# Matchers pour les valeurs par défaut
+# Matchers for default value
 config_setting(
     name = "match_version_default",
     flag_values = {"@gateweavers_rules_vhdl//vhdl/config:version": "default"},

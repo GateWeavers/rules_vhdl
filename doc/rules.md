@@ -118,10 +118,13 @@ Runs formal equivalence checking on two VHDL designs using EQY.
 
 ---
 
-## Toolchain Management (`@gateweavers_rules_vhdl//simulator`)
+## Toolchain Management (`@gateweavers_rules_vhdl//simulator` & `@gateweavers_rules_vhdl//formal`)
 
 ### `vhdl_toolchains` (Module Extension)
 Manages hermetic installations of VHDL simulators (GHDL, NVC).
+
+**Tag: `defaults`**
+- Registers the default pre-configured simulator toolchains.
 
 **Tag: `ghdl`**
 - `name`: Repository name.
@@ -133,19 +136,68 @@ Manages hermetic installations of VHDL simulators (GHDL, NVC).
 **Tag: `nvc`**
 - `name`, `version`, `url`, `sha256`, `is_default`.
 
+### `formal_toolchains` (Module Extension)
+Manages hermetic installations of formal verification tools (Yosys, SymbiYosys, solvers).
+
+**Tag: `defaults`**
+- Registers the default pre-configured formal toolchains (OSS CAD Suite).
+
+**Tag: `oss_cad_suite`**
+- `name`: Repository name.
+- `url`, `sha256`, `strip_prefix`: Archive details.
+- `os`: Target OS (`"linux"`).
+- `arch`: Target CPU architecture (`"x86_64"`).
+
+**Tag: `local`**
+- `name`: Repository name.
+- `path`: Path to local installation directory.
+- `os`, `arch`: System compatibility.
+
+**Tag: `mock`**
+- `name`: Repository name.
+- `os`, `arch`: System compatibility.
+
 ### Registration
 
-To register toolchains, use the `vhdl_toolchains` hub repo. Here is a complete `MODULE.bazel` example:
+To register toolchains, use the `vhdl_toolchains` and `formal_toolchains` hub repos.
+
+#### Option 1: Registering Default Pre-Configured Toolchains
+
+This is the simplest way to get started. It registers the default GHDL, NVC, and OSS CAD Suite toolchains for your platform:
 
 ```python
 bazel_dep(name = "gateweavers_rules_vhdl", version = "0.1.0")
 
-# Use the toolchain extension
+# --- Simulation Toolchains ---
 vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
+# Register default simulator toolchains
+vhdl_toolchains.defaults()
+use_repo(vhdl_toolchains, "vhdl_toolchains")
 
-# Define one or more toolchains
+# --- Formal Toolchains ---
+formal_toolchains = use_extension("@gateweavers_rules_vhdl//formal:extensions.bzl", "formal_toolchains")
+# Register default formal verification toolchain (OSS CAD Suite)
+formal_toolchains.defaults()
+use_repo(formal_toolchains, "formal_toolchains")
+
+# Register all toolchains defined in the hubs
+register_toolchains(
+    "@vhdl_toolchains//:all",
+    "@formal_toolchains//:all",
+)
+```
+
+#### Option 2: Registering Custom Toolchains
+
+You can declare custom toolchains by specifying custom download details, versions, or system paths:
+
+```python
+bazel_dep(name = "gateweavers_rules_vhdl", version = "0.1.0")
+
+# --- Custom Simulation Toolchain ---
+vhdl_toolchains = use_extension("@gateweavers_rules_vhdl//simulator:extensions.bzl", "vhdl_toolchains")
 vhdl_toolchains.ghdl(
-    name = "ghdl_mcode",
+    name = "custom_ghdl",
     version = "6.0",
     backend = "mcode",
     url = "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ubuntu24.04-x86_64.tar.gz",
@@ -153,12 +205,24 @@ vhdl_toolchains.ghdl(
     strip_prefix = "ghdl-mcode-6.0.0-ubuntu24.04-x86_64",
     is_default = True,
 )
-
-# Declare the hub repository
 use_repo(vhdl_toolchains, "vhdl_toolchains")
 
-# Register all toolchains defined in the hub
-register_toolchains("@vhdl_toolchains//:all")
+# --- Custom Formal Toolchain ---
+formal_toolchains = use_extension("@gateweavers_rules_vhdl//formal:extensions.bzl", "formal_toolchains")
+formal_toolchains.oss_cad_suite(
+    name = "custom_oss_cad_suite",
+    url = "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2026-07-21/oss-cad-suite-linux-x64-20260721.tgz",
+    sha256 = "6efd4012620df0c2305844dfdf9dab7a31763753b9792d6cbb1dcd8327e99d49",
+    os = "linux",
+    arch = "x86_64",
+)
+use_repo(formal_toolchains, "formal_toolchains")
+
+# Register all toolchains defined in the hubs
+register_toolchains(
+    "@vhdl_toolchains//:all",
+    "@formal_toolchains//:all",
+)
 ```
 
 ---
