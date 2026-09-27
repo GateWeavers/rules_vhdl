@@ -11,6 +11,5 @@
 
 load("//formal/test:tests.bzl", "formal_test_suite")
 
-# gazelle:vhdl_enabled false
 
 formal_test_suite(name = "formal_tests")

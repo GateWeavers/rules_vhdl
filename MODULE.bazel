@@ -70,14 +70,6 @@ python.toolchain(python_version = "3.12", is_default = True)
 use_repo(python, "python_3_12")
 register_toolchains("@python_3_12//:all", dev_dependency = True)
 
-bazel_dep(name = "rules_go", version = "0.59.0", dev_dependency = True)
-bazel_dep(name = "gazelle", version = "0.41.0", dev_dependency = True)
-
-go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk", dev_dependency = True)
-go_sdk.download(version = "1.22.0")
-
-go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps", dev_dependency = True)
-go_deps.from_file(go_mod = "//:go.mod")
 
 uv_bin = use_extension("@aspect_rules_py//uv/unstable:extension.bzl", "uv_bin", dev_dependency = True)
 uv_bin.toolchain(version = "0.11.6")

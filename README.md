@@ -12,7 +12,6 @@ Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.
 - **VUnit Integration**: Native support for VUnit testbenches and custom Python runners.
 - **Cocotb 2.0 Support**: Modern Python-based verification using the new `cocotb_tools` runner API.
 - **Formal Verification**: Native SymbiYosys (`sby`), Yosys (GHDL plugin), and VHDL PSL property verification support (`vhdl_formal_test`, `vhdl_bmc_test`, `vhdl_cover_test`).
-- **Automated Build Generation**: Custom Gazelle extension that scans VHDL source code to generate and update Bazel rules automatically.
 - **Bzlmod Ready**: Modern Bazel dependency management out of the box.
 - **Advanced Python Support**: Easily add custom Python libraries (like `crc`, `numpy`) to your simulation environment.
 
@@ -270,51 +269,6 @@ vunit_sim(
 
 ---
 
-## Automation with Gazelle (Experimental)
-
-`gateweavers_rules_vhdl` includes a Gazelle extension that automates the creation of `vhdl_library` and `vunit_sim` rules.
-
-### Setup
-
-In your root `BUILD.bazel`:
-
-```starlark
-load("@gazelle//:def.bzl", "gazelle", "gazelle_binary")
-
-gazelle_binary(
-    name = "gazelle_vhdl_binary",
-    languages = [
-        "@gazelle//language/go",
-        "@gateweavers_rules_vhdl//tooling/gazelle/vhdl",
-    ],
-)
-
-gazelle(
-    name = "gazelle",
-    gazelle = ":gazelle_vhdl_binary",
-)
-```
-In your root `MODULE.bazel`:
-
-```starlark
-bazel_dep(name = "rules_go", version = "0.59.0")
-bazel_dep(name = "gazelle", version = "0.41.0")
-```
-
-### Execution
-
-Simply run:
-```bash
-bazel run //:gazelle
-```
-The extension will scan your `.vhd` files, identify entities/testbenches, and update your `BUILD` files with the correct dependencies.
-
-### Directives
-
-- `# gazelle:vhdl_enabled false`: Disable VHDL scanning for a specific directory.
-- `# gazelle:vhdl_library_name custom_name`: Override the default VHDL library name for a directory.
-
----
 
 ## Examples & Use Cases
 
