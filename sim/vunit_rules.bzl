@@ -83,7 +83,6 @@ def _vunit_context_impl(ctx):
         fail("Unknown toolchain type")
 
     libraries_config = {}
-    transitive_srcs = []
 
     dut_info = ctx.attr.dut[VhdlLibraryInfo]
     dut_libs = extract_sources(dut_info)
@@ -94,15 +93,12 @@ def _vunit_context_impl(ctx):
             libraries_config[lib_name] = []
 
         for f in lib_struct.sources.to_list():
-            transitive_srcs.append(f)
             libraries_config[lib_name].append({
                 "file": f.short_path,
                 "version": lib_struct.vhdl_version
             })
 
     tb_files = ctx.files.srcs
-    transitive_srcs.extend(tb_files)
-
     tb_lib_name = ctx.attr.name + "_lib"
     if tb_lib_name not in libraries_config:
         libraries_config[tb_lib_name] = []
@@ -122,9 +118,14 @@ def _vunit_context_impl(ctx):
     config_file = ctx.actions.declare_file(ctx.label.name + "_config.json")
     ctx.actions.write(config_file, json.encode_indent(config_content))
 
+    transitive_runfiles = depset(
+        direct = [binary_file, config_file] + tb_files,
+        transitive = [extra_files] + [l.sources for l in dut_libs],
+    )
+
     return [DefaultInfo(
         files = depset([config_file]),
-        runfiles = ctx.runfiles(files = transitive_srcs + [binary_file, config_file], transitive_files = extra_files)
+        runfiles = ctx.runfiles(transitive_files = transitive_runfiles),
     )]
 
 vunit_context = rule(

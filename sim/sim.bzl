@@ -27,10 +27,6 @@ def _vhdl_test_impl(ctx):
     dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
     dut_libs = extract_sources(dut_lib_info)
     tb_srcs = ctx.files.srcs
-    all_srcs = []
-    all_srcs.extend(tb_srcs)
-    for l in dut_libs:
-        all_srcs.extend(l.sources.to_list())
 
     # Check if it's GHDL or NVC
     is_ghdl = hasattr(toolchain, "ghdl_info")
@@ -43,7 +39,11 @@ def _vhdl_test_impl(ctx):
     else:
         fail("Unknown toolchain type")
 
-    runfiles = ctx.runfiles(files = [bin_file] + all_srcs, transitive_files = extra_files)
+    transitive_runfiles = depset(
+        direct = tb_srcs,
+        transitive = [extra_files] + [l.sources for l in dut_libs],
+    )
+    runfiles = ctx.runfiles(files = [bin_file], transitive_files = transitive_runfiles)
 
     return [DefaultInfo(executable = executable, runfiles = runfiles)]
 
@@ -54,11 +54,14 @@ def _ghdl_sim_impl(ctx, info, dut_libs, tb_srcs):
     # script_content.append("export GHDL_PREFIX=$(dirname " + ghdl_bin.short_path + ")/../lib/ghdl")
 
     for lib_info in dut_libs:
+        sources = lib_info.sources.to_list()
+        if not sources:
+            continue
         cmd = "{ghdl} -a --std={std} --work={lib} {files}".format(
             ghdl = ghdl_bin.short_path,
             std = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version),
             lib = lib_info.library_name,
-            files = " ".join([f.short_path for f in lib_info.sources.to_list()])
+            files = " ".join([f.short_path for f in sources])
         )
         script_content.append(cmd)
 
@@ -95,12 +98,15 @@ def _nvc_sim_impl(ctx, info, dut_libs, tb_srcs):
     nvc_opts_str = " ".join(nvc_opts)
 
     for lib_info in dut_libs:
+        sources = lib_info.sources.to_list()
+        if not sources:
+            continue
         cmd = "{nvc} {opts} --std={std} --work={lib} -a {files}".format(
             nvc = nvc_bin.short_path,
             opts = nvc_opts_str,
             std = lib_info.vhdl_version,
             lib = lib_info.library_name,
-            files = " ".join([f.short_path for f in lib_info.sources.to_list()])
+            files = " ".join([f.short_path for f in sources])
         )
         script_content.append(cmd)
 

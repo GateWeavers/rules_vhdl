@@ -30,14 +30,12 @@ def _cocotb_context_impl(ctx):
         fail("Unknown toolchain type")
 
     libraries_config = {}
-    transitive_srcs = []
 
     dut_libs = extract_sources(ctx.attr.dut[VhdlLibraryInfo])
     for lib_struct in dut_libs:
         lib_name = lib_struct.library_name
         files = [{"file": f.short_path, "version": lib_struct.vhdl_version} for f in lib_struct.sources.to_list()]
         libraries_config.setdefault(lib_name, []).extend(files)
-        transitive_srcs.extend(lib_struct.sources.to_list())
 
     config_content = {
         "simulator_type": sim_type,
@@ -50,12 +48,14 @@ def _cocotb_context_impl(ctx):
     config_file = ctx.actions.declare_file(ctx.label.name + "_config.json")
     ctx.actions.write(config_file, json.encode_indent(config_content))
 
+    transitive_runfiles = depset(
+        direct = [binary_file, config_file],
+        transitive = [extra_files] + [l.sources for l in dut_libs],
+    )
+
     return [DefaultInfo(
         files = depset([config_file]),
-        runfiles = ctx.runfiles(
-            files = transitive_srcs + [binary_file, config_file],
-            transitive_files = extra_files
-        )
+        runfiles = ctx.runfiles(transitive_files = transitive_runfiles),
     )]
 
 cocotb_context = rule(

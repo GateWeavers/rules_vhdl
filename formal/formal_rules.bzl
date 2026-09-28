@@ -20,26 +20,19 @@ def _vhdl_formal_test_impl(ctx):
     dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
     dut_libs = extract_sources(dut_lib_info)
 
-    # Collect all sources (VHDL + PSL files)
+    # Collect all sources (VHDL + PSL files) for config generation
     vhdl_files = []
-    transitive_runfiles = []
-
     for lib_struct in dut_libs:
-        for f in lib_struct.sources.to_list():
-            vhdl_files.append(f)
-            transitive_runfiles.append(f)
+        vhdl_files.extend(lib_struct.sources.to_list())
 
     for psl_f in ctx.files.psl_srcs:
         vhdl_files.append(psl_f)
-        transitive_runfiles.append(psl_f)
 
     # get the binaries from the toolchain provider
     f_info = ctx.toolchains["@gateweavers_rules_vhdl//formal:toolchain_type"].formal_info
     sby_bin_path = f_info.sby_binary.short_path
     yosys_bin_path = f_info.yosys_binary.short_path
     extra_tool_files = f_info.formal_files
-    transitive_runfiles.append(f_info.sby_binary)
-    transitive_runfiles.append(f_info.yosys_binary)
 
     # Generate .sby config file
     sby_config_file = ctx.actions.declare_file(ctx.label.name + ".sby")
@@ -94,8 +87,6 @@ def _vhdl_formal_test_impl(ctx):
             content = "\n".join(lines),
         )
 
-    transitive_runfiles.append(sby_config_file)
-
     # Create test execution script
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
 
@@ -123,7 +114,11 @@ def _vhdl_formal_test_impl(ctx):
         is_executable = True,
     )
 
-    runfiles = ctx.runfiles(files = transitive_runfiles, transitive_files = extra_tool_files)
+    transitive_runfiles = depset(
+        direct = [f_info.sby_binary, f_info.yosys_binary, sby_config_file] + ctx.files.psl_srcs,
+        transitive = [extra_tool_files] + [l.sources for l in dut_libs],
+    )
+    runfiles = ctx.runfiles(transitive_files = transitive_runfiles)
 
     return [
         DefaultInfo(
@@ -205,33 +200,25 @@ def vhdl_prove_test(name, dut, top_entity, **kwargs):
     )
 
 def _vhdl_eqy_test_impl(ctx):
-    transitive_runfiles = []
-
     # Toolchain resolution
     f_info = ctx.toolchains["@gateweavers_rules_vhdl//formal:toolchain_type"].formal_info
     eqy_bin_path = f_info.eqy_binary.short_path
     yosys_bin_path = f_info.yosys_binary.short_path
     extra_tool_files = f_info.formal_files
-    transitive_runfiles.append(f_info.eqy_binary)
-    transitive_runfiles.append(f_info.yosys_binary)
 
     # Collect gold files
     gold_files = []
     gold_lib_info = ctx.attr.gold[VhdlLibraryInfo]
     gold_libs = extract_sources(gold_lib_info)
     for lib_struct in gold_libs:
-        for f in lib_struct.sources.to_list():
-            gold_files.append(f)
-            transitive_runfiles.append(f)
+        gold_files.extend(lib_struct.sources.to_list())
 
     # Collect gate files
     gate_files = []
     gate_lib_info = ctx.attr.gate[VhdlLibraryInfo]
     gate_libs = extract_sources(gate_lib_info)
     for lib_struct in gate_libs:
-        for f in lib_struct.sources.to_list():
-            gate_files.append(f)
-            transitive_runfiles.append(f)
+        gate_files.extend(lib_struct.sources.to_list())
 
     # Generate .eqy config
     eqy_config_file = ctx.actions.declare_file(ctx.label.name + ".eqy")
@@ -281,7 +268,6 @@ def _vhdl_eqy_test_impl(ctx):
             output = eqy_config_file,
             content = "\n".join(lines),
         )
-    transitive_runfiles.append(eqy_config_file)
 
     # Create execution script
     script = ctx.actions.declare_file(ctx.label.name + ".sh")
@@ -299,7 +285,11 @@ def _vhdl_eqy_test_impl(ctx):
         is_executable = True,
     )
 
-    runfiles = ctx.runfiles(files = transitive_runfiles, transitive_files = extra_tool_files)
+    transitive_runfiles = depset(
+        direct = [f_info.eqy_binary, f_info.yosys_binary, eqy_config_file],
+        transitive = [extra_tool_files] + [l.sources for l in gold_libs] + [l.sources for l in gate_libs],
+    )
+    runfiles = ctx.runfiles(transitive_files = transitive_runfiles)
 
     return [
         DefaultInfo(

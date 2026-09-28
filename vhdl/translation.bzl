@@ -51,17 +51,15 @@ def _vhdl_translate_impl(ctx):
     std_flag = map_vhdl_version_to_ghdl_flag(vhdl_version)
 
     # Compile transitive libraries and target library
-    all_source_files = []
     for lib_info in libs_list:
-        sources_list = lib_info.sources
+        sources_list = lib_info.sources.to_list()
         if not sources_list:
             continue
-        all_source_files.extend(sources_list.to_list())
         cmd = "\"{ghdl}\" -a --std={std} --work={lib} {files}".format(
             ghdl = ghdl_bin.path,
             std = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version),
             lib = lib_info.library_name,
-            files = " ".join(["\"" + f.path + "\"" for f in sources_list.to_list()])
+            files = " ".join(["\"" + f.path + "\"" for f in sources_list])
         )
         script_content.append(cmd)
 
@@ -81,8 +79,7 @@ def _vhdl_translate_impl(ctx):
 
     # Define the list of inputs for the action (sources from all libraries)
     inputs = depset(
-        direct = all_source_files,
-        transitive = [ghdl_info.ghdl_files],
+        transitive = [ghdl_info.ghdl_files] + [lib.sources for lib in libs_list],
     )
 
     # Write the script file
@@ -184,17 +181,17 @@ def _vhdl_wrapper_impl(ctx):
     if ctx.attr.wrapper_entity:
         args.add("--wrapper-entity", ctx.attr.wrapper_entity)
 
-    # Collect transitive inputs and construct --sources arguments
-    all_source_files = []
+    # Collect transitive inputs and construct --sources arguments lazily via args.add_all
     for lib_info in libs_list:
-        all_source_files.extend(lib_info.sources.to_list())
-        for f in lib_info.sources.to_list():
-            std_v = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version)
-            args.add("--source", "{}:{}:{}".format(lib_info.library_name, std_v, f.path))
+        std_v = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version)
+        args.add_all(
+            lib_info.sources,
+            before_each = "--source",
+            format_each = "{}:{}:%s".format(lib_info.library_name, std_v),
+        )
 
     inputs = depset(
-        direct = all_source_files,
-        transitive = [ghdl_info.ghdl_files],
+        transitive = [ghdl_info.ghdl_files] + [lib.sources for lib in libs_list],
     )
 
     ctx.actions.run(
