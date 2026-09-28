@@ -50,7 +50,7 @@ def _validate_library_name(name):
 VhdlLibraryInfo = provider(
     doc = "Provider containing VHDL library structures and their sources.",
     fields = {
-        "libraries": "A dictionary mapping 'lib_name@version' to a struct(sources, library_name, vhdl_version)."
+        "vhdl_libs": "A depset of structs containing library, sources (depset), and vhdl_version.",
     }
 )
 
@@ -65,9 +65,9 @@ VhdlModuleInfo = provider(
     }
 )
 
-def _process_vhdl_libraries(ctx, srcs, library_name, vhdl_version, deps, merge_work_lib):
+def _process_vhdl_library(ctx, srcs = None, library_name = None, vhdl_version = None, deps = None, merge_work_lib = None):
     """
-    Common logic to merge libraries and organize sources.
+    Aggregates direct VHDL sources and transitive dependencies into a VhdlLibraryInfo provider.
 
     Args:
         ctx: The rule context.
@@ -78,60 +78,154 @@ def _process_vhdl_libraries(ctx, srcs, library_name, vhdl_version, deps, merge_w
         merge_work_lib: Whether to merge the 'work' library from dependencies.
 
     Returns:
-        A dictionary of library structures.
+        A VhdlLibraryInfo provider populated with aggregated library depsets.
     """
-    merged_sources_map = {}
+    if srcs == None:
+        srcs = getattr(ctx.files, "srcs", [])
+    if library_name == None:
+        library_name = getattr(ctx.attr, "library_name", "work")
+    if vhdl_version == None:
+        vhdl_version = getattr(ctx.attr, "vhdl_version", DEFAULT_VHDL_VERSION)
+    if deps == None:
+        deps = getattr(ctx.attr, "deps", [])
+    if merge_work_lib == None:
+        merge_work_lib = getattr(ctx.attr, "merge_work_lib", getattr(ctx.attr, "merge_lib", False))
 
-    # 1. Collect transitive library info from dependencies
+    current_lib = library_name
+    transitive_deps = []
+    merged_lib = []
+
     for dep in deps:
         if VhdlLibraryInfo in dep:
-            for key, info in dep[VhdlLibraryInfo].libraries.items():
-                if key not in merged_sources_map:
-                    merged_sources_map[key] = []
-                merged_sources_map[key].append(info.sources)
+            info = dep[VhdlLibraryInfo]
 
-    # 2. Add current target sources to the specified library
-    current_key = "{}@{}".format(library_name, vhdl_version)
-    if current_key not in merged_sources_map:
-        merged_sources_map[current_key] = []
-    merged_sources_map[current_key].append(depset(srcs))
+            # check if we need to modify the work lib name
+            if merge_work_lib:
+                for lib_struct in info.vhdl_libs.to_list():
+                    if lib_struct.library == "work":
+                        merged_lib.append(struct(
+                            library = current_lib,
+                            sources = lib_struct.sources,
+                            vhdl_version = lib_struct.vhdl_version,
+                        ))
+                    else:
+                        merged_lib.append(lib_struct)
+            else:
+                # accumulate the transitive deps
+                transitive_deps.append(info.vhdl_libs)
 
-    # 3. Handle work merging logic
-    if merge_work_lib and library_name != "work":
-        work_key = "work@{}".format(vhdl_version)
-        if work_key in merged_sources_map:
-            merged_sources_map[current_key].extend(merged_sources_map[work_key])
+    # manage direct sources
+    direct_sources = struct(
+        library = current_lib,
+        sources = srcs if type(srcs) == "depset" else depset(srcs),
+        vhdl_version = vhdl_version,
+    )
 
-    # 4. Finalize the structures
-    final_libraries = {}
-    for key, depset_list in merged_sources_map.items():
-        lib_name, ver = key.split("@")
-        final_libraries[key] = struct(
-            sources = depset(transitive = depset_list),
-            library_name = lib_name,
-            vhdl_version = ver
-        )
+    return VhdlLibraryInfo(
+        vhdl_libs = depset(
+            [direct_sources] + merged_lib,
+            transitive = transitive_deps,
+        ),
+    )
 
-    return final_libraries
+def extract_sources(vhdl_info):
+    """
+    Extracts and groups VHDL sources by library from a VhdlLibraryInfo provider.
+
+    Args:
+        vhdl_info: A VhdlLibraryInfo provider or Target with VhdlLibraryInfo.
+
+    Returns:
+        A list of structs with id, name, library_name, sources, version, vhdl_version.
+    """
+    if type(vhdl_info) == "list":
+        if len(vhdl_info) > 0:
+            return extract_sources(vhdl_info[0])
+        return []
+
+    if hasattr(vhdl_info, "vhdl_libs"):
+        info = vhdl_info
+    elif VhdlLibraryInfo in vhdl_info:
+        info = vhdl_info[VhdlLibraryInfo]
+    else:
+        fail("Expected VhdlLibraryInfo or Target providing VhdlLibraryInfo")
+
+    grouped = {}
+
+    # Accumulate depsets into their unique vhdl library
+    for entry in info.vhdl_libs.to_list():
+        lib_name = entry.library
+        version = getattr(entry, "vhdl_version", None)
+        key = "%s@%s" % (lib_name, version or "")
+
+        if key not in grouped:
+            grouped[key] = {
+                "name": lib_name,
+                "version": version,
+                "depsets": [],
+            }
+        grouped[key]["depsets"].append(entry.sources)
+
+    # Merge the depsets of each lib and return a flat list of src files
+    result = []
+    for key, item in grouped.items():
+        result.append(struct(
+            id = key,
+            name = item["name"],
+            library_name = item["name"],
+            sources = depset(transitive = item["depsets"]),
+            version = item["version"],
+            vhdl_version = item["version"],
+        ))
+
+    return result
+
+def accumulate_vhdl_library_info(ctx, extra_srcs = [], extra_deps = []):
+    """Accumulate VhdlLibraryInfo from deps with optional direct sources"""
+    lib_name = getattr(ctx.attr, "library_name", getattr(ctx.attr, "library", "work"))
+    vhdl_version = getattr(ctx.attr, "vhdl_version", None)
+
+    # Direct raw vhdl files
+    all_srcs = getattr(ctx.files, "srcs", []) + extra_srcs
+    direct_vhdl = [f for f in all_srcs if f.extension.lower() in ["vhd", "vhdl"]]
+
+    direct_structs = []
+    if direct_vhdl:
+        direct_structs.append(struct(
+            library = lib_name,
+            sources = depset(direct_vhdl),
+            vhdl_version = vhdl_version,
+        ))
+
+    # 2. Extraction transitive O(1) des dépendances
+    targets = getattr(ctx.attr, "deps", []) + extra_deps
+    transitive = [dep[VhdlLibraryInfo].vhdl_libs for dep in targets if VhdlLibraryInfo in dep]
+
+    return VhdlLibraryInfo(
+        vhdl_libs = depset(direct_structs, transitive = transitive),
+    )
 
 def _vhdl_library_impl(ctx):
     """
     Implementation of the vhdl_library rule using common logic.
     """
     _validate_library_name(ctx.attr.library_name)
-    libs = _process_vhdl_libraries(
+    vhdl_info = _process_vhdl_library(
         ctx = ctx,
         srcs = ctx.files.srcs,
         library_name = ctx.attr.library_name,
         vhdl_version = ctx.attr.vhdl_version,
         deps = ctx.attr.deps,
-        merge_work_lib = ctx.attr.merge_work_lib
+        merge_work_lib = ctx.attr.merge_work_lib,
     )
 
-    all_files = depset(ctx.files.data, transitive = [l.sources for l in libs.values()])
+    all_files = depset(
+        ctx.files.data,
+        transitive = [lib.sources for lib in vhdl_info.vhdl_libs.to_list()],
+    )
     return [
-        VhdlLibraryInfo(libraries = libs),
-        DefaultInfo(files = all_files)
+        vhdl_info,
+        DefaultInfo(files = all_files),
     ]
 
 def _vhdl_module_impl(ctx):
@@ -140,13 +234,13 @@ def _vhdl_module_impl(ctx):
     """
 
     _validate_library_name(ctx.attr.library_name)
-    libs = _process_vhdl_libraries(
+    vhdl_info = _process_vhdl_library(
         ctx = ctx,
         srcs = ctx.files.srcs,
         library_name = ctx.attr.library_name,
         vhdl_version = ctx.attr.vhdl_version,
         deps = ctx.attr.deps,
-        merge_work_lib = False
+        merge_work_lib = False,
     )
 
     transitive_entities = []
@@ -156,20 +250,23 @@ def _vhdl_module_impl(ctx):
 
     dep_entities_depset = depset(
         direct = [ctx.attr.entity_name],
-        transitive = transitive_entities
+        transitive = transitive_entities,
     )
 
-    all_files = depset(ctx.files.data, transitive = [l.sources for l in libs.values()])
+    all_files = depset(
+        ctx.files.data,
+        transitive = [lib.sources for lib in vhdl_info.vhdl_libs.to_list()],
+    )
 
     return [
-        VhdlLibraryInfo(libraries = libs),
+        vhdl_info,
         VhdlModuleInfo(
             entity_name = ctx.attr.entity_name,
             generics = ctx.attr.generics,
             vhdl_version = ctx.attr.vhdl_version,
-            dep_entities = dep_entities_depset
+            dep_entities = dep_entities_depset,
         ),
-        DefaultInfo(files = all_files)
+        DefaultInfo(files = all_files),
     ]
 
 # Common attributes to avoid repetition

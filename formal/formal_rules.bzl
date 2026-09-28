@@ -13,17 +13,18 @@
 Rules and macros for VHDL Formal Verification using SymbiYosys (SBY), Yosys, and GHDL.
 """
 
-load("//vhdl:vhdl.bzl", "VhdlLibraryInfo")
+load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
 load("//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 
 def _vhdl_formal_test_impl(ctx):
     dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
+    dut_libs = extract_sources(dut_lib_info)
 
     # Collect all sources (VHDL + PSL files)
     vhdl_files = []
     transitive_runfiles = []
 
-    for _, lib_struct in dut_lib_info.libraries.items():
+    for lib_struct in dut_libs:
         for f in lib_struct.sources.to_list():
             vhdl_files.append(f)
             transitive_runfiles.append(f)
@@ -217,7 +218,8 @@ def _vhdl_eqy_test_impl(ctx):
     # Collect gold files
     gold_files = []
     gold_lib_info = ctx.attr.gold[VhdlLibraryInfo]
-    for _, lib_struct in gold_lib_info.libraries.items():
+    gold_libs = extract_sources(gold_lib_info)
+    for lib_struct in gold_libs:
         for f in lib_struct.sources.to_list():
             gold_files.append(f)
             transitive_runfiles.append(f)
@@ -225,7 +227,8 @@ def _vhdl_eqy_test_impl(ctx):
     # Collect gate files
     gate_files = []
     gate_lib_info = ctx.attr.gate[VhdlLibraryInfo]
-    for _, lib_struct in gate_lib_info.libraries.items():
+    gate_libs = extract_sources(gate_lib_info)
+    for lib_struct in gate_libs:
         for f in lib_struct.sources.to_list():
             gate_files.append(f)
             transitive_runfiles.append(f)

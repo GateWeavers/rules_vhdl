@@ -14,12 +14,12 @@ Cocotb 2.0 integration rules for Bazel.
 """
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
 load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 
 def _cocotb_context_impl(ctx):
     toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
-    
+
     if hasattr(toolchain, "ghdl_info"):
         sim_type, info = "ghdl", toolchain.ghdl_info
         binary_file, extra_files = info.ghdl_binary, info.ghdl_files
@@ -28,11 +28,12 @@ def _cocotb_context_impl(ctx):
         binary_file, extra_files = info.nvc_binary, info.nvc_lib
     else:
         fail("Unknown toolchain type")
-    
+
     libraries_config = {}
     transitive_srcs = []
-    
-    for lib_key, lib_struct in ctx.attr.dut[VhdlLibraryInfo].libraries.items():
+
+    dut_libs = extract_sources(ctx.attr.dut[VhdlLibraryInfo])
+    for lib_struct in dut_libs:
         lib_name = lib_struct.library_name
         files = [{"file": f.short_path, "version": lib_struct.vhdl_version} for f in lib_struct.sources.to_list()]
         libraries_config.setdefault(lib_name, []).extend(files)
@@ -45,14 +46,14 @@ def _cocotb_context_impl(ctx):
         "hdl_toplevel": ctx.attr.hdl_toplevel,
         "test_module": ctx.attr.test_module,
     }
-    
+
     config_file = ctx.actions.declare_file(ctx.label.name + "_config.json")
     ctx.actions.write(config_file, json.encode_indent(config_content))
 
     return [DefaultInfo(
         files = depset([config_file]),
         runfiles = ctx.runfiles(
-            files = transitive_srcs + [binary_file, config_file], 
+            files = transitive_srcs + [binary_file, config_file],
             transitive_files = extra_files
         )
     )]
@@ -78,7 +79,7 @@ def cocotb_sim(name, dut, hdl_toplevel, test_module, srcs = [], main = None, **k
     Macro to run a Cocotb simulation.
     """
     context_name = name + "_ctx"
-    
+
     # Simplify test_module: if it's just a name, prepend the package module path
     full_test_module = test_module
     if "." not in test_module:
@@ -93,12 +94,12 @@ def cocotb_sim(name, dut, hdl_toplevel, test_module, srcs = [], main = None, **k
         test_module = full_test_module,
         **{k: v for k, v in kwargs.items() if k in ["tool_simulator", "tool_version", "tool_backend", "simulator", "tags"]}
     )
-    
+
     env = dict(kwargs.get("env", {}), **{
         "COCOTB_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",
         "PYTHONPATH": ".:" + native.package_name(),
     })
-    
+
     deps = kwargs.get("deps", []) + [
         "@pypi//cocotb",
         "@gateweavers_rules_vhdl//sim:cocotb_bazel_helper"
@@ -110,7 +111,7 @@ def cocotb_sim(name, dut, hdl_toplevel, test_module, srcs = [], main = None, **k
         module_name = main.replace(".py", "")
         if ":" in module_name:
             module_name = module_name.split(":")[-1]
-        
+
         full_user_module = pkg + "." + module_name if pkg else module_name
         env["COCOTB_USER_RUNNER"] = full_user_module
         actual_srcs = srcs + [main]

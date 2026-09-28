@@ -17,7 +17,7 @@ VUnit simulations hermetically within Bazel.
 """
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
 load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 
 # --- LE TEMPLATE PYTHON ---
@@ -26,15 +26,15 @@ from sim.vunit_bazel_helper import get_vunit_from_bazel, add_lib_from_bazel, set
 
 def main():
     vu = get_vunit_from_bazel()
-    
+
     vu.add_vhdl_builtins()
     vu.add_osvvm()
     vu.add_verification_components()
-    
+
     add_lib_from_bazel(vu)
-    
+
     set_nvc_options(vu)
-    
+
     vu.main()
 
 if __name__ == "__main__":
@@ -63,7 +63,7 @@ _vunit_runner_gen = rule(
 
 def _vunit_context_impl(ctx):
     toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
-    
+
     binary_file = None
     library_path = None
     extra_files = depset()
@@ -81,17 +81,18 @@ def _vunit_context_impl(ctx):
         extra_files = info.nvc_lib
     else:
         fail("Unknown toolchain type")
-    
+
     libraries_config = {}
     transitive_srcs = []
-    
+
     dut_info = ctx.attr.dut[VhdlLibraryInfo]
-    
-    for lib_key, lib_struct in dut_info.libraries.items():
+    dut_libs = extract_sources(dut_info)
+
+    for lib_struct in dut_libs:
         lib_name = lib_struct.library_name
         if lib_name not in libraries_config:
             libraries_config[lib_name] = []
-        
+
         for f in lib_struct.sources.to_list():
             transitive_srcs.append(f)
             libraries_config[lib_name].append({
@@ -101,11 +102,11 @@ def _vunit_context_impl(ctx):
 
     tb_files = ctx.files.srcs
     transitive_srcs.extend(tb_files)
-    
+
     tb_lib_name = ctx.attr.name + "_lib"
     if tb_lib_name not in libraries_config:
         libraries_config[tb_lib_name] = []
-        
+
     for f in tb_files:
         libraries_config[tb_lib_name].append({
             "file": f.short_path,
@@ -117,7 +118,7 @@ def _vunit_context_impl(ctx):
         "binary_path": binary_file.short_path,
         "libraries": libraries_config
     }
-    
+
     config_file = ctx.actions.declare_file(ctx.label.name + "_config.json")
     ctx.actions.write(config_file, json.encode_indent(config_content))
 
@@ -165,9 +166,9 @@ vunit_context = rule(
 def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], main=None, enable_coverage=True, **kwargs):
     """
     Macro to run a VUnit simulation.
-    
+
     This macro creates a `vunit_context` to gather sources and a `py_test` to execute the simulation.
-    
+
     Args:
         name: Unique name for the test target.
         dut: The VHDL library/module design under test.
@@ -184,7 +185,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
     context_name = name + "_ctx"
     runner_gen_name = name + "_gen_script"
     runner_file = name + "_runner.py"
-    
+
     vunit_context(
         name = context_name,
         dut = dut,
@@ -195,7 +196,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         simulator = simulator,
         tags = kwargs.get("tags", []),
     )
-    
+
     if not main:
         _vunit_runner_gen(
             name = runner_gen_name,
@@ -205,7 +206,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         main_script = runner_file
     else:
         main_script = main
-    
+
     test_env = {
         "VUNIT_BAZEL_CONFIG": "$(rootpath :" + context_name + ")",
         # "VUNIT_SIMULATOR": simulator if simulator else tool_simulator,

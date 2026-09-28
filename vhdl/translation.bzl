@@ -13,7 +13,7 @@
 VHDL Translation and wrapper generation rules.
 """
 
-load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "vhdl_library")
+load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "vhdl_library", "extract_sources")
 load("//simulator:transition.bzl", "vhdl_sim_config_transition")
 load("//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 load("//sim:sim.bzl", "vhdl_test")
@@ -33,7 +33,7 @@ def _vhdl_translate_impl(ctx):
 
     # Extract VhdlLibraryInfo details from the src target
     src_lib_info = ctx.attr.src[VhdlLibraryInfo]
-    libs_list = src_lib_info.libraries.values()
+    libs_list = extract_sources(src_lib_info)
     if not libs_list:
         fail("Target src VhdlLibraryInfo contains no libraries.")
     primary_lib = libs_list[-1]
@@ -51,15 +51,17 @@ def _vhdl_translate_impl(ctx):
     std_flag = map_vhdl_version_to_ghdl_flag(vhdl_version)
 
     # Compile transitive libraries and target library
+    all_source_files = []
     for lib_info in libs_list:
-        sources_list = lib_info.sources.to_list()
+        sources_list = lib_info.sources
         if not sources_list:
             continue
+        all_source_files.extend(sources_list.to_list())
         cmd = "\"{ghdl}\" -a --std={std} --work={lib} {files}".format(
             ghdl = ghdl_bin.path,
             std = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version),
             lib = lib_info.library_name,
-            files = " ".join(["\"" + f.path + "\"" for f in sources_list])
+            files = " ".join(["\"" + f.path + "\"" for f in sources_list.to_list()])
         )
         script_content.append(cmd)
 
@@ -78,11 +80,9 @@ def _vhdl_translate_impl(ctx):
     script_content.append(cmd_synth)
 
     # Define the list of inputs for the action (sources from all libraries)
-    transitive_inputs = [ghdl_info.ghdl_files]
-    for lib_struct in libs_list:
-        transitive_inputs.append(lib_struct.sources)
     inputs = depset(
-        transitive = transitive_inputs
+        direct = all_source_files,
+        transitive = [ghdl_info.ghdl_files],
     )
 
     # Write the script file
@@ -160,10 +160,10 @@ def _vhdl_wrapper_impl(ctx):
     ghdl_bin = ghdl_info.ghdl_binary
 
     out_file = ctx.actions.declare_file(ctx.attr.out or (ctx.label.name + ".vhd"))
-    
+
     # Extract VhdlLibraryInfo details from the src target
     src_lib_info = ctx.attr.src[VhdlLibraryInfo]
-    libs_list = src_lib_info.libraries.values()
+    libs_list = extract_sources(src_lib_info)
     if not libs_list:
         fail("Target src VhdlLibraryInfo contains no libraries.")
     primary_lib = libs_list[-1]
@@ -185,14 +185,17 @@ def _vhdl_wrapper_impl(ctx):
         args.add("--wrapper-entity", ctx.attr.wrapper_entity)
 
     # Collect transitive inputs and construct --sources arguments
-    transitive_inputs = [ghdl_info.ghdl_files]
+    all_source_files = []
     for lib_info in libs_list:
-        transitive_inputs.append(lib_info.sources)
+        all_source_files.extend(lib_info.sources.to_list())
         for f in lib_info.sources.to_list():
             std_v = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version)
             args.add("--source", "{}:{}:{}".format(lib_info.library_name, std_v, f.path))
 
-    inputs = depset(transitive = transitive_inputs)
+    inputs = depset(
+        direct = all_source_files,
+        transitive = [ghdl_info.ghdl_files],
+    )
 
     ctx.actions.run(
         inputs = inputs,
@@ -279,7 +282,7 @@ def vhdl_translate_and_verify(
     **kwargs
 ):
     """Translates a VHDL entity to VHDL 93 and runs equivalence checks against a testbench."""
-    
+
     # 1. Translation
     translated_vhd = name + "_translated_vhd"
     vhdl_translate(
@@ -289,7 +292,7 @@ def vhdl_translate_and_verify(
         preserve_ports = preserve_ports,
         simulator = simulator,
     )
-    
+
     # 2. Translated Library (compiled to a unique flat library to avoid name collision with wrapper)
     translated_lib = name + "_translated_lib"
     flat_library_name = name + "_flat_lib"
@@ -298,7 +301,7 @@ def vhdl_translate_and_verify(
         srcs = [":" + translated_vhd],
         library_name = flat_library_name,
     )
-    
+
     # 3. Wrapper (if ports are flattened)
     if not preserve_ports:
         wrapper_target = name + "_wrapper"
@@ -311,7 +314,7 @@ def vhdl_translate_and_verify(
             wrapper_entity = entity_name,
             simulator = simulator,
         )
-        
+
         # Wrapped translated library (exposing record ports)
         wrapped_lib = name + "_wrapped_lib"
         vhdl_library(
@@ -328,7 +331,7 @@ def vhdl_translate_and_verify(
     if testbench_srcs or test_module:
         orig_test_name = name + "_orig_test"
         trans_test_name = name + "_translated_test"
-        
+
         if test_type == "vhdl":
             vhdl_test(
                 name = orig_test_name,
