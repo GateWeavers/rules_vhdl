@@ -72,7 +72,10 @@ def _vhdl_formal_test_impl(ctx):
         lines.append("[script]")
         lines.append("plugin -i ghdl")
         ghdl_cmd_files = " ".join([f.basename for f in vhdl_files])
-        lines.append("ghdl --std=08 {} -e {}".format(ghdl_cmd_files, ctx.attr.top_entity))
+        std_flag = "08"
+        if dut_libs:
+            std_flag = map_vhdl_version_to_ghdl_flag(dut_libs[-1].vhdl_version)
+        lines.append("ghdl --std={} {} -e {}".format(std_flag, ghdl_cmd_files, ctx.attr.top_entity))
         lines.append("prep -top {}".format(ctx.attr.top_entity))
         lines.append("")
 
@@ -248,14 +251,20 @@ def _vhdl_eqy_test_impl(ctx):
         # [gold]
         lines.append("[gold]")
         lines.append("plugin -i ghdl")
-        lines.append("ghdl --std=08 {} -e {}".format(gold_cmd_files, ctx.attr.top_entity))
+        gold_std_flag = "08"
+        if gold_libs:
+            gold_std_flag = map_vhdl_version_to_ghdl_flag(gold_libs[-1].vhdl_version)
+        lines.append("ghdl --std={} {} -e {}".format(gold_std_flag, gold_cmd_files, ctx.attr.top_entity))
         lines.append("prep -top {}".format(ctx.attr.top_entity))
         lines.append("")
 
         # [gate]
         lines.append("[gate]")
         lines.append("plugin -i ghdl")
-        lines.append("ghdl --std=08 {} -e {}".format(gate_cmd_files, ctx.attr.top_entity))
+        gate_std_flag = "08"
+        if gate_libs:
+            gate_std_flag = map_vhdl_version_to_ghdl_flag(gate_libs[-1].vhdl_version)
+        lines.append("ghdl --std={} {} -e {}".format(gate_std_flag, gate_cmd_files, ctx.attr.top_entity))
         lines.append("prep -top {}".format(ctx.attr.top_entity))
         lines.append("")
 

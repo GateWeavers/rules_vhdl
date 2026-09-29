@@ -103,10 +103,11 @@ def _vunit_context_impl(ctx):
     if tb_lib_name not in libraries_config:
         libraries_config[tb_lib_name] = []
 
+    tb_version = ctx.attr.vhdl_version
     for f in tb_files:
         libraries_config[tb_lib_name].append({
             "file": f.short_path,
-            "version": "2008"
+            "version": tb_version,
         })
 
     config_content = {
@@ -142,6 +143,10 @@ vunit_context = rule(
             allow_files = True,
             doc = "Testbench source files.",
         ),
+        "vhdl_version": attr.string(
+            default = "2008",
+            doc = "VHDL standard version for testbench files.",
+        ),
         "tool_simulator": attr.string(
             default = "ghdl",
             doc = "Simulator type constraint ('ghdl' or 'nvc').",
@@ -164,7 +169,7 @@ vunit_context = rule(
     doc = "Gathers VHDL sources and generates a VUnit JSON configuration file.",
 )
 
-def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, deps=[], main=None, enable_coverage=True, **kwargs):
+def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default", tool_backend="default", simulator=None, vhdl_version="2008", deps=[], main=None, enable_coverage=True, **kwargs):
     """
     Macro to run a VUnit simulation.
 
@@ -178,6 +183,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         tool_version: Specific version constraint.
         tool_backend: Specific backend constraint (GHDL only).
         simulator: Explicit toolchain label override.
+        vhdl_version: VHDL standard version for testbench files.
         deps: Extra Python dependencies.
         main: Optional custom runner script.
         enable_coverage: Whether code coverage collection is enabled when running bazel coverage.
@@ -191,6 +197,7 @@ def vunit_sim(name, dut, srcs = [], tool_simulator="ghdl", tool_version="default
         name = context_name,
         dut = dut,
         srcs = srcs,
+        vhdl_version = vhdl_version,
         tool_simulator = tool_simulator,
         tool_version = tool_version,
         tool_backend = tool_backend,
