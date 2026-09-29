@@ -57,24 +57,24 @@ def _ghdl_sim_impl(ctx, info, dut_libs, tb_srcs):
         sources = lib_info.sources.to_list()
         if not sources:
             continue
-        cmd = "{ghdl} -a --std={std} --work={lib} {files}".format(
+        cmd = "\"{ghdl}\" -a --std={std} --work={lib} {files}".format(
             ghdl = ghdl_bin.short_path,
             std = map_vhdl_version_to_ghdl_flag(lib_info.vhdl_version),
             lib = lib_info.library_name,
-            files = " ".join([f.short_path for f in sources])
+            files = " ".join(["\"" + f.short_path + "\"" for f in sources])
         )
         script_content.append(cmd)
 
     tb_opts = "--std=" + map_vhdl_version_to_ghdl_flag(ctx.attr.vhdl_version)
-    script_content.append("{ghdl} -a {opts} {files}".format(
-        ghdl = ghdl_bin.short_path, opts = tb_opts, files = " ".join([f.short_path for f in tb_srcs])
+    script_content.append("\"{ghdl}\" -a {opts} {files}".format(
+        ghdl = ghdl_bin.short_path, opts = tb_opts, files = " ".join(["\"" + f.short_path + "\"" for f in tb_srcs])
     ))
 
     sim_args = " ".join(ctx.attr.sim_args)
-    script_content.append("{ghdl} -e {opts} {entity}".format(
+    script_content.append("\"{ghdl}\" -e {opts} {entity}".format(
         ghdl = ghdl_bin.short_path, opts = tb_opts, entity = ctx.attr.testbench_entity,
     ))
-    script_content.append("{ghdl} -r {opts} {entity} {args}".format(
+    script_content.append("\"{ghdl}\" -r {opts} {entity} {args}".format(
         ghdl = ghdl_bin.short_path, opts = tb_opts, entity = ctx.attr.testbench_entity, args = sim_args
     ))
 
@@ -101,24 +101,24 @@ def _nvc_sim_impl(ctx, info, dut_libs, tb_srcs):
         sources = lib_info.sources.to_list()
         if not sources:
             continue
-        cmd = "{nvc} {opts} --std={std} --work={lib} -a {files}".format(
+        cmd = "\"{nvc}\" {opts} --std={std} --work={lib} -a {files}".format(
             nvc = nvc_bin.short_path,
             opts = nvc_opts_str,
             std = lib_info.vhdl_version,
             lib = lib_info.library_name,
-            files = " ".join([f.short_path for f in sources])
+            files = " ".join(["\"" + f.short_path + "\"" for f in sources])
         )
         script_content.append(cmd)
 
-    script_content.append("{nvc} {opts} --std={std} -a {files}".format(
+    script_content.append("\"{nvc}\" {opts} --std={std} -a {files}".format(
         nvc = nvc_bin.short_path,
         opts = nvc_opts_str,
         std = ctx.attr.vhdl_version,
-        files = " ".join([f.short_path for f in tb_srcs])
+        files = " ".join(["\"" + f.short_path + "\"" for f in tb_srcs])
     ))
 
     sim_args = " ".join(ctx.attr.sim_args)
-    script_content.append("{nvc} {opts} -e {entity} -r {args}".format(
+    script_content.append("\"{nvc}\" {opts} -e {entity} -r {args}".format(
         nvc = nvc_bin.short_path,
         opts = nvc_opts_str,
         entity = ctx.attr.testbench_entity,
