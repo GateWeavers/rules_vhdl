@@ -38,6 +38,11 @@ def _basic_lib_test_impl(ctx):
     asserts.equals(env, "util_lib", lib_struct.library_name)
     asserts.equals(env, "2008", lib_struct.vhdl_version)
 
+    # 4. Verify list input aggregation in extract_sources
+    list_extracted = extract_sources([target[VhdlLibraryInfo], target[VhdlLibraryInfo]])
+    list_libs = {lib.id: lib for lib in list_extracted}
+    asserts.true(env, expected_key in list_libs, "Key '{}' not found in list-extracted libraries".format(expected_key))
+
     return analysistest.end(env)
 
 basic_lib_test = analysistest.make(_basic_lib_test_impl)
