@@ -24,8 +24,7 @@ def _vhdl_test_impl(ctx):
     toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
 
     # Collect all sources for runfiles
-    dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
-    dut_libs = extract_sources(dut_lib_info)
+    dut_libs = extract_sources(ctx.attr.dut)
     tb_srcs = ctx.files.srcs
 
     # Check if it's GHDL or NVC

@@ -27,7 +27,7 @@ def _basic_lib_test_impl(ctx):
         return analysistest.end(env)
 
     # 2. Check the dictionary key format (lib_name@version)
-    extracted = extract_sources(target[VhdlLibraryInfo])
+    extracted = extract_sources(target)
     libs = {lib.id: lib for lib in extracted}
     expected_key = "util_lib@2008"
 
@@ -39,7 +39,7 @@ def _basic_lib_test_impl(ctx):
     asserts.equals(env, "2008", lib_struct.vhdl_version)
 
     # 4. Verify list input aggregation in extract_sources
-    list_extracted = extract_sources([target[VhdlLibraryInfo], target[VhdlLibraryInfo]])
+    list_extracted = extract_sources([target, target])
     list_libs = {lib.id: lib for lib in list_extracted}
     asserts.true(env, expected_key in list_libs, "Key '{}' not found in list-extracted libraries".format(expected_key))
 
@@ -47,12 +47,33 @@ def _basic_lib_test_impl(ctx):
 
 basic_lib_test = analysistest.make(_basic_lib_test_impl)
 
+# --- Test: Work Library Unit Extraction ---
+def _work_lib_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target = analysistest.target_under_test(env)
+
+    extracted = extract_sources(target)
+    libs = {lib.id: lib for lib in extracted}
+    expected_key = "work@93"
+
+    asserts.true(env, expected_key in libs, "Key '{}' not found in libraries".format(expected_key))
+    lib_struct = libs[expected_key]
+    asserts.equals(env, "work", lib_struct.library_name)
+    asserts.equals(env, "93", lib_struct.vhdl_version)
+
+    srcs = [f.basename for f in lib_struct.sources.to_list()]
+    asserts.true(env, "work_source.vhd" in srcs, "work_source.vhd missing from extracted sources")
+
+    return analysistest.end(env)
+
+work_lib_test = analysistest.make(_work_lib_test_impl)
+
 # --- Test 2: 'merge_work_lib' Logic ---
 def _merge_work_test_impl(ctx):
     env = analysistest.begin(ctx)
     target = analysistest.target_under_test(env)
 
-    extracted = extract_sources(target[VhdlLibraryInfo])
+    extracted = extract_sources(target)
     libs = {lib.id: lib for lib in extracted}
     target_key = "main_lib@93"
 
@@ -284,11 +305,17 @@ def vhdl_rules_test_suite(name):
         target_under_test = ":test_target_complex_data",
     )
 
+    work_lib_test(
+        name = "work_lib_test",
+        target_under_test = ":test_work_dep",
+    )
+
     # Main test suite entry point
     native.test_suite(
         name = name,
         tests = [
             ":basic_lib_test",
+            ":work_lib_test",
             ":merge_work_test",
             ":module_deps_test",
             ":translate_test",

@@ -84,8 +84,7 @@ def _vunit_context_impl(ctx):
 
     libraries_config = {}
 
-    dut_info = ctx.attr.dut[VhdlLibraryInfo]
-    dut_libs = extract_sources(dut_info)
+    dut_libs = extract_sources(ctx.attr.dut)
 
     for lib_struct in dut_libs:
         lib_name = lib_struct.library_name

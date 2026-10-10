@@ -17,8 +17,7 @@ load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
 load("//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 
 def _vhdl_formal_test_impl(ctx):
-    dut_lib_info = ctx.attr.dut[VhdlLibraryInfo]
-    dut_libs = extract_sources(dut_lib_info)
+    dut_libs = extract_sources(ctx.attr.dut)
 
     # Collect all sources (VHDL + PSL files) for config generation
     vhdl_files = []
@@ -211,15 +210,13 @@ def _vhdl_eqy_test_impl(ctx):
 
     # Collect gold files
     gold_files = []
-    gold_lib_info = ctx.attr.gold[VhdlLibraryInfo]
-    gold_libs = extract_sources(gold_lib_info)
+    gold_libs = extract_sources(ctx.attr.gold)
     for lib_struct in gold_libs:
         gold_files.extend(lib_struct.sources.to_list())
 
     # Collect gate files
     gate_files = []
-    gate_lib_info = ctx.attr.gate[VhdlLibraryInfo]
-    gate_libs = extract_sources(gate_lib_info)
+    gate_libs = extract_sources(ctx.attr.gate)
     for lib_struct in gate_libs:
         gate_files.extend(lib_struct.sources.to_list())
 

@@ -32,8 +32,7 @@ def _vhdl_translate_impl(ctx):
     out_file = ctx.actions.declare_file(ctx.attr.out or (ctx.label.name + ".vhd"))
 
     # Extract VhdlLibraryInfo details from the src target
-    src_lib_info = ctx.attr.src[VhdlLibraryInfo]
-    libs_list = extract_sources(src_lib_info)
+    libs_list = extract_sources(ctx.attr.src)
     if not libs_list:
         fail("Target src VhdlLibraryInfo contains no libraries.")
     primary_lib = libs_list[-1]
@@ -159,8 +158,7 @@ def _vhdl_wrapper_impl(ctx):
     out_file = ctx.actions.declare_file(ctx.attr.out or (ctx.label.name + ".vhd"))
 
     # Extract VhdlLibraryInfo details from the src target
-    src_lib_info = ctx.attr.src[VhdlLibraryInfo]
-    libs_list = extract_sources(src_lib_info)
+    libs_list = extract_sources(ctx.attr.src)
     if not libs_list:
         fail("Target src VhdlLibraryInfo contains no libraries.")
     primary_lib = libs_list[-1]

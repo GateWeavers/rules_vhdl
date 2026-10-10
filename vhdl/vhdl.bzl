@@ -47,10 +47,21 @@ def _validate_library_name(name):
         fail("Library name '{}' is reserved and cannot be used.".format(name))
 
 # Provider for library management
-VhdlLibraryInfo = provider(
-    doc = "Provider containing VHDL library structures and their sources.",
+VhdlLibraryUnitInfo = provider(
+    doc = "Atomic vhdl library unit bound to a (library_name, vhdl_version) pair.",
     fields = {
-        "vhdl_libs": "depset[struct(library: str, sources: depset[File], vhdl_version: str)]",
+        "library_name": "Target logical library name (str)",
+        "vhdl_version": "VHDL standard version string (e.g. '93', '2008')",
+        "sources": "depset[File] of source files",
+    },
+)
+
+VhdlLibraryInfo = provider(
+    doc = "Provider containing accumulated VHDL library provider (VhdlLibraryUnitInfo).",
+    fields = {
+        "work_libs": "depset[VhdlLibraryUnitInfo] of default 'work' lib",
+        "vhdl_libs": "depset[VhdlLibraryUnitInfo] of named library unit",
+        "all_libs": "depset[VhdlLibraryUnitInfo] of all library units in topological postorder",
     },
 )
 
@@ -91,55 +102,95 @@ def _process_vhdl_library(ctx, srcs = None, library_name = None, vhdl_version = 
     if merge_work_lib == None:
         merge_work_lib = getattr(ctx.attr, "merge_work_lib", getattr(ctx.attr, "merge_lib", False))
 
-    current_lib = library_name
-    transitive_deps = []
-    merged_lib = []
+    is_work = (library_name == "work")
 
+    if merge_work_lib and is_work:
+        fail(
+            "Cannot set merge_work_lib = True when library_name = 'work' in target '%s'. " % ctx.label +
+            "The 'work' libraries in deps are already in work." +
+            "Specify an explicit library_name (e.g., 'neorv32_lib') to seal dependencies."
+        )
+
+    # Aggregate incoming depsets
+    transitive_work = []
+    transitive_libs = []
+    transitive_all = []
     for dep in deps:
         if VhdlLibraryInfo in dep:
             info = dep[VhdlLibraryInfo]
-
-            # check if we need to modify the work lib name
-            if merge_work_lib:
-                for lib_struct in info.vhdl_libs.to_list():
-                    if lib_struct.library == "work":
-                        merged_lib.append(struct(
-                            library = current_lib,
-                            sources = lib_struct.sources,
-                            vhdl_version = lib_struct.vhdl_version,
-                        ))
-                    else:
-                        merged_lib.append(lib_struct)
-            else:
-                # accumulate the transitive deps
-                transitive_deps.append(info.vhdl_libs)
+            transitive_work.append(info.work_libs)
+            transitive_libs.append(info.vhdl_libs)
+            transitive_all.append(info.all_libs)
+        else:
+            fail("Dependency '{}' does not provide VhdlLibraryInfo.".format(getattr(dep, "label", dep)))
 
     # manage direct sources
-    direct_sources = struct(
-        library = current_lib,
-        sources = srcs if type(srcs) == "depset" else depset(srcs),
+    direct_unit = VhdlLibraryUnitInfo(
+        library_name = library_name,
         vhdl_version = vhdl_version,
-    )
+        sources = depset(srcs),
+    ) if srcs else None
+
+    direct_units_list = [direct_unit] if direct_unit else []
+
+    # Check if the work lib should not be merged into the current lib
+    if not merge_work_lib:
+        if is_work:
+            work_depset = depset(direct = direct_units_list, transitive = transitive_work, order = "postorder")
+            lib_depset = depset(transitive = transitive_libs, order = "postorder")
+        else:
+            work_depset = depset(transitive = transitive_work, order = "postorder")
+            lib_depset = depset(direct = direct_units_list, transitive = transitive_libs, order = "postorder")
+        all_depset = depset(direct = direct_units_list, transitive = transitive_all, order = "postorder")
+        return VhdlLibraryInfo(
+            work_libs = work_depset,
+            vhdl_libs = lib_depset,
+            all_libs = all_depset,
+        )
+
+    # Merge the work lib
+    # list the current work libs. Can be costly if too many targets try to merge the work libs.
+    work_libs = depset(transitive = transitive_work, order = "postorder").to_list()
+
+    libs_units = []
+    for unit in work_libs:
+        libs_units.append(VhdlLibraryUnitInfo(
+            library_name = library_name,      # Re-mapped to IP library boundary name
+            vhdl_version = unit.vhdl_version, # Retains original standard per bucket
+            sources = unit.sources,           # Retains underlying unflattened File depset
+        ))
+
+    if direct_unit:
+        libs_units.append(direct_unit)
 
     return VhdlLibraryInfo(
+        work_libs = depset(order = "postorder"), # Reset work lib for upstream targets
         vhdl_libs = depset(
-            [direct_sources] + merged_lib,
-            transitive = transitive_deps,
+            direct = libs_units,
+            transitive = transitive_libs,
+            order = "postorder",
+        ),
+        all_libs = depset(
+            direct = libs_units,
+            transitive = transitive_libs,
+            order = "postorder",
         ),
     )
 
 def extract_sources(vhdl_info):
     """
-    Extracts and groups VHDL sources by library from a VhdlLibraryInfo provider, Target, or list thereof.
+    Extracts and groups VHDL sources by library from a Target providing VhdlLibraryInfo, or a list thereof.
 
     Args:
-        vhdl_info: A VhdlLibraryInfo provider, Target providing VhdlLibraryInfo, or a list thereof.
+        vhdl_info: A Target providing VhdlLibraryInfo, or a list thereof.
 
     Returns:
         A list of structs with:
           - id: unique key formatted as "<library_name>@<vhdl_version>"
+          - name: alias for library_name
           - library_name: name of the VHDL library
           - sources: depset of File objects belonging to this library
+          - version: alias for vhdl_version
           - vhdl_version: VHDL standard version string
     """
     if type(vhdl_info) == "list":
@@ -150,17 +201,17 @@ def extract_sources(vhdl_info):
     grouped = {}
 
     for item in items:
-        if hasattr(item, "vhdl_libs"):
-            info = item
-        elif VhdlLibraryInfo in item:
+        if VhdlLibraryInfo in item:
             info = item[VhdlLibraryInfo]
         else:
-            fail("Expected VhdlLibraryInfo or Target providing VhdlLibraryInfo, got {}".format(type(item)))
+            fail("Expected Target providing VhdlLibraryInfo, got {}".format(type(item)))
+
+        units = info.all_libs.to_list()
 
         # Accumulate depsets into their unique vhdl library
-        for entry in info.vhdl_libs.to_list():
-            lib_name = entry.library
-            version = getattr(entry, "vhdl_version", None)
+        for entry in units:
+            lib_name = entry.library_name
+            version = entry.vhdl_version
             key = "%s@%s" % (lib_name, version or "")
 
             if key not in grouped:
@@ -169,15 +220,21 @@ def extract_sources(vhdl_info):
                     "vhdl_version": version,
                     "depsets": [],
                 }
-            grouped[key]["depsets"].append(entry.sources)
+            srcs = entry.sources
+            if type(srcs) == "depset":
+                grouped[key]["depsets"].append(srcs)
+            else:
+                grouped[key]["depsets"].append(depset(srcs))
 
     # Merge the depsets of each lib and return a list of library structs
     result = []
     for key, item in grouped.items():
         result.append(struct(
             id = key,
+            # name = item["library_name"],
             library_name = item["library_name"],
             sources = depset(transitive = item["depsets"]),
+            # version = item["vhdl_version"],
             vhdl_version = item["vhdl_version"],
         ))
 
