@@ -177,39 +177,26 @@ def _process_vhdl_library(ctx, srcs = None, library_name = None, vhdl_version = 
         ),
     )
 
-def extract_sources(vhdl_info):
-    """
-    Extracts and groups VHDL sources by library from a Target providing VhdlLibraryInfo, or a list thereof.
+def _unit_files(unit):
+    """Files of a library unit, in the order of the `srcs` that declared them."""
+    srcs = unit.sources
+    return srcs.to_list() if type(srcs) == "depset" else list(srcs)
 
-    Args:
-        vhdl_info: A Target providing VhdlLibraryInfo, or a list thereof.
-
-    Returns:
-        A list of structs with:
-          - id: unique key formatted as "<library_name>@<vhdl_version>"
-          - name: alias for library_name
-          - library_name: name of the VHDL library
-          - sources: depset of File objects belonging to this library
-          - version: alias for vhdl_version
-          - vhdl_version: VHDL standard version string
-    """
-    if type(vhdl_info) == "list":
-        items = vhdl_info
-    else:
-        items = [vhdl_info]
-
-    grouped = {}
-
+def _as_infos(vhdl_info):
+    items = vhdl_info if type(vhdl_info) == "list" else [vhdl_info]
+    infos = []
     for item in items:
         if VhdlLibraryInfo in item:
-            info = item[VhdlLibraryInfo]
+            infos.append(item[VhdlLibraryInfo])
         else:
             fail("Expected Target providing VhdlLibraryInfo, got {}".format(type(item)))
+    return infos
 
-        units = info.all_libs.to_list()
-
+def _extract_grouped(infos):
+    grouped = {}
+    for info in infos:
         # Accumulate depsets into their unique vhdl library
-        for entry in units:
+        for entry in info.all_libs.to_list():
             lib_name = entry.library_name
             version = entry.vhdl_version
             key = "%s@%s" % (lib_name, version or "")
@@ -231,14 +218,96 @@ def extract_sources(vhdl_info):
     for key, item in grouped.items():
         result.append(struct(
             id = key,
-            # name = item["library_name"],
             library_name = item["library_name"],
             sources = depset(transitive = item["depsets"]),
-            # version = item["vhdl_version"],
             vhdl_version = item["vhdl_version"],
         ))
-
     return result
+
+def ordered_segments(units):
+    """Compile-order segments of a list of library units.
+
+    Args:
+        units: list of VhdlLibraryUnitInfo in dependency order (dependencies
+            first), e.g. VhdlLibraryInfo.all_libs.to_list().
+
+    Returns:
+        The segments described in `extract_sources(ordered = True)`.
+    """
+
+    # Only CONSECUTIVE units of the same (library, version) are merged. Merging
+    # the others would make the order impossible: with ip_a -> ip_b -> ip_a
+    # (a unit of ip_a uses ip_b, which uses another unit of ip_a), the group
+    # ip_a needs ip_b first and ip_b needs ip_a first.
+    segments = []
+    for unit in units:
+        key = "%s@%s" % (unit.library_name, unit.vhdl_version or "")
+        if segments and segments[-1]["key"] == key:
+            seg = segments[-1]
+        else:
+            seg = {
+                "key": key,
+                "library_name": unit.library_name,
+                "vhdl_version": unit.vhdl_version,
+                "files": [],
+                "seen": {},
+            }
+            segments.append(seg)
+        for f in _unit_files(unit):
+            if f.path not in seg["seen"]:
+                seg["seen"][f.path] = True
+                seg["files"].append(f)
+
+    result = []
+    for index, seg in enumerate(segments):
+        result.append(struct(
+            id = "%s#%d" % (seg["key"], index),
+            key = seg["key"],
+            index = index,
+            library_name = seg["library_name"],
+            vhdl_version = seg["vhdl_version"],
+            files = seg["files"],
+            sources = depset(seg["files"]),
+        ))
+    return result
+
+def _extract_ordered(infos):
+    # One postorder over all the targets: dependencies first, shared units once.
+    return ordered_segments(depset(transitive = [info.all_libs for info in infos], order = "postorder").to_list())
+
+def extract_sources(vhdl_info, ordered = False):
+    """Extracts VHDL sources by library from Target(s) providing VhdlLibraryInfo.
+
+    Two modes, depending on what the consumer does with the result.
+
+    ordered = False (default, unchanged): one struct per (library, version).
+      Fields: id ("<library>@<version>"), library_name, vhdl_version and
+      sources (depset of File).
+      The order BETWEEN libraries is lost: when libraries interleave (a unit of
+      ip_a uses ip_b, which uses another unit of ip_a) no order of the groups is
+      valid. Only for consumers that compute the compile order themselves
+      (VUnit, `ghdl -i` + `ghdl -m`, ...).
+
+    ordered = True: the list of segments to compile in sequence, valid for any
+      sequential compiler (ghdl -a, nvc -a, Yosys, ...). A segment is a run of
+      consecutive units (dependencies first) with the same (library, version),
+      so a library can appear several times.
+      Fields: id ("<library>@<version>#<index>", unique), key, index,
+      library_name, vhdl_version, files (ordered list of File: units in
+      dependency order, files of a unit in the order of its `srcs`) and
+      sources (depset of the same files).
+
+    Args:
+        vhdl_info: A Target providing VhdlLibraryInfo, or a list thereof.
+        ordered: Return the compile-order segments instead of the groups.
+
+    Returns:
+        A list of structs, see above.
+    """
+    infos = _as_infos(vhdl_info)
+    if ordered:
+        return _extract_ordered(infos)
+    return _extract_grouped(infos)
 
 def _vhdl_library_impl(ctx):
     """

@@ -1,0 +1,104 @@
+# load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//vhdl:vhdl.bzl", "vhdl_library")
+load("//sim:sim.bzl","vhdl_test")
+# load(":extract_sources_test.bzl", "compile_manifest", "extract_sources_test_suite")
+
+# Libraries that interleave: ip_a -> ip_b -> ip_a. See extract_sources_test.bzl.
+
+vhdl_library(
+    name = "ip_base",
+    srcs = [
+        "ip_a_types.vhd",  # before ip_a_pkg.vhd, which is not the alphabetical order
+        "ip_a_pkg.vhd",
+    ],
+    library_name = "ip_a",
+)
+
+vhdl_library(
+    name = "ip_more",
+    srcs = ["ip_a_more.vhd"],
+    library_name = "ip_a",
+    deps = [":ip_base"],
+)
+
+vhdl_library(
+    name = "ip_legacy",
+    srcs = ["ip_b_legacy.vhd"],
+    library_name = "ip_b",
+    vhdl_version = "93",
+)
+
+vhdl_library(
+    name = "ip_b",
+    srcs = ["ip_b_pkg.vhd"],
+    library_name = "ip_b",
+    deps = [
+        ":ip_more",
+        ":ip_legacy",
+    ],
+)
+
+vhdl_library(
+    name = "ip_a_top",
+    srcs = ["ip_a_top.vhd"],
+    library_name = "ip_a",
+    deps = [":ip_b"],
+)
+
+# Default library: work.
+vhdl_library(
+    name = "design",
+    srcs = ["top.vhd"],
+    deps = [":ip_a_top"],
+)
+
+vhdl_test(
+    name = "compile_order",
+    srcs = ["tb.vhd"],
+    dut = ":design",
+    testbench_entity = "tb",
+    tool_backend = "mcode",
+    tool_simulator = "ghdl",
+    tool_version = "6.0",
+)
+
+# # Pure Starlark tests (no simulator needed).
+# extract_sources_test_suite(name = "extract_sources_tests")
+
+# # Ground truth with a real compiler. Manual: needs `ghdl` in PATH.
+# compile_manifest(
+#     name = "manifest_ordered",
+#     ordered = True,
+#     deps = [":design"],
+# )
+
+# compile_manifest(
+#     name = "manifest_grouped",
+#     deps = [":design"],
+# )
+
+# sh_test(
+#     name = "ghdl_compile_ordered_test",
+#     srcs = ["check_compile_order.sh"],
+#     args = ["$(location :manifest_ordered)"],
+#     data = [":manifest_ordered"],
+#     tags = [
+#         "manual",
+#         "requires-ghdl",
+#     ],
+# )
+
+# # Negative control: analyzing the grouped order must make GHDL fail.
+# sh_test(
+#     name = "ghdl_compile_grouped_fails_test",
+#     srcs = ["check_compile_order.sh"],
+#     args = [
+#         "$(location :manifest_grouped)",
+#         "expect-failure",
+#     ],
+#     data = [":manifest_grouped"],
+#     tags = [
+#         "manual",
+#         "requires-ghdl",
+#     ],
+# )
