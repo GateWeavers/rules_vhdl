@@ -1,5 +1,8 @@
 # gateweavers_rules_vhdl
 
+[![BCR](https://img.shields.io/badge/BCR-gateweavers_rules_vhdl-green?logo=bazel)](https://registry.bazel.build/modules/gateweavers_rules_vhdl)
+[![CI](https://github.com/GateWeavers/rules_vhdl/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/GateWeavers/rules_vhdl/actions/workflows/ci.yml)
+
 Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.build).
 
 `gateweavers_rules_vhdl` provides a robust infrastructure for VHDL development, integrating standard simulators (GHDL, NVC) with the [VUnit](https://vunit.github.io/) verification framework. It leverages `aspect_rules_py` for a fully hermetic Python environment.
