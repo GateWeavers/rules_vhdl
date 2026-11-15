@@ -18,6 +18,16 @@
 
 This module provides rules for defining VHDL libraries and modules,
 managing transitive dependencies, and handling VHDL versioning.
+
+## Dependency graph
+
+Every VhdlLibraryInfo carries a `node` (VhdlNodeInfo: label, library, version,
+direct deps). `extract_graph`, `graph_tree` and `graph_dot` turn it into a view
+limited to modules, and the `vhdl_graph` rule writes it to files. Each node
+also knows its source and data files (`include_files`).
+
+The same source may legitimately appear twice (once sealed in `ip_lib`, once in
+the default library when a top-level target also depends on it directly).
 """
 
 VhdlConfigInfo = provider(
@@ -81,7 +91,7 @@ def _normalize_library_name(name, label):
 
 # Provider for library management
 VhdlLibraryUnitInfo = provider(
-    doc = "Atomic vhdl library unit bound to a (library_name, vhdl_version) pair.",
+    doc = """Atomic vhdl library unit bound to a (library_name, vhdl_version) pair.""",
     fields = {
         "library_name": "Target logical library name (str, lower case)",
         "vhdl_version": "VHDL standard version string (e.g. '93', '2008')",
@@ -90,10 +100,29 @@ VhdlLibraryUnitInfo = provider(
     },
 )
 
-VhdlLibraryInfo = provider(
-    doc = "Provider containing accumulated VHDL library provider (VhdlLibraryUnitInfo).",
+VhdlNodeInfo = provider(
+    doc = """Node of the VHDL dependency graph: what a target declares, and who it depends on.
+
+    It is the data behind `extract_graph`, `graph_tree` and `graph_dot`. A
+    virtual node (label None) stands for an accumulation of several infos, see
+    `merge_vhdl_library_infos`: it has no identity of its own, and the graph
+    looks through it.
+    """,
     fields = {
-        "all_libs": "depset[VhdlLibraryUnitInfo] of all library units, in topological postorder (dependencies first). A unit of the default library has default library_name 'work'.",
+        "label": "str: label of the target (e.g. '//axis:fifo'), None for a virtual node",
+        "library_name": "str: library declared by the target (lower case), None for a virtual node",
+        "vhdl_version": "str: VHDL standard declared by the target, None for a virtual node",
+        "direct_deps": "tuple[VhdlNodeInfo]: nodes of the direct dependencies",
+        "srcs": "tuple[str]: short_path of the source files of the target (empty for a virtual node)",
+        "data": "tuple[str]: short_path of the data files of the target (empty for a virtual node)",
+    },
+)
+
+VhdlLibraryInfo = provider(
+    doc = "Accumulated VHDL library units (VhdlLibraryUnitInfo) of a target and of its transitive dependencies.",
+    fields = {
+        "node": "VhdlNodeInfo: this target in the dependency graph. Read it with `extract_graph`.",
+        "all_libs": "depset[VhdlLibraryUnitInfo] of all library units, in topological postorder (dependencies first). A unit of the default library has library_name 'work'.",
         "transitive_srcs": "depset[File] of every source file of this target and its transitive dependencies (flat, without library information): use it for action inputs",
         "data": "depset[File] of the data files of this target and its transitive dependencies",
     },
@@ -109,7 +138,7 @@ VhdlModuleInfo = provider(
     fields = {
         "entity_name": "The name of the VHDL entity.",
         "generics": "A dictionary of generic values.",
-        "label": "Label of the vhdl_module target, to tell apart several modules of the same entity.",
+        "label": "Label of the vhdl_module target, to tell apart several modules of the same entity (e.g. different generics).",
     },
 )
 
@@ -119,6 +148,20 @@ def _module_record(module):
         generics = tuple(sorted(module.generics.items())),
         label = module.label,
     )
+
+def _label_str(label):
+    """'@repo//package:name' (or '//package:name' in the main repository) from a Label or a string."""
+    if type(label) == "string":
+        return label
+    repo = label.workspace_name
+    return "%s//%s:%s" % (("@" + repo) if repo else "", label.package, label.name)
+
+def _node_of(info):
+    """The graph node of a VhdlLibraryInfo; infos built without one are an empty virtual node."""
+    node = getattr(info, "node", None)
+    if node != None:
+        return node
+    return VhdlNodeInfo(label = None, library_name = None, vhdl_version = None, direct_deps = (), srcs = (), data = ())
 
 def _as_infos(vhdl_info):
     """Normalizes Target(s) and/or VhdlLibraryInfo value(s) to a list of VhdlLibraryInfo."""
@@ -195,6 +238,15 @@ def vhdl_library_info(
     dep_infos = _as_infos(deps)
     transitive_all = [info.all_libs for info in dep_infos]
 
+    node = VhdlNodeInfo(
+        label = _label_str(label),
+        library_name = library_name,
+        vhdl_version = vhdl_version,
+        direct_deps = tuple([_node_of(info) for info in dep_infos]),
+        srcs = tuple([f.short_path for f in srcs]),
+        data = tuple([f.short_path for f in data]),
+    )
+
     srcs_depset = depset(srcs, transitive = [info.transitive_srcs for info in dep_infos])
     data_depset = depset(data, transitive = [info.data for info in dep_infos])
 
@@ -210,6 +262,7 @@ def vhdl_library_info(
     if not merge_work_lib:
         # Work units stay in work and keep bubbling up until a target merge them into a lib.
         return VhdlLibraryInfo(
+            node = node,
             all_libs = depset(direct = direct_units_list, transitive = transitive_all, order = "postorder"),
             transitive_srcs = srcs_depset,
             data = data_depset,
@@ -236,6 +289,7 @@ def vhdl_library_info(
     sealed = depset(units_libs, order = "postorder")
 
     return VhdlLibraryInfo(
+        node = node,
         all_libs = sealed,
         transitive_srcs = srcs_depset,
         data = data_depset,
@@ -254,6 +308,14 @@ def merge_vhdl_library_infos(infos):
     if len(infos) == 1:
         return infos[0]
     return VhdlLibraryInfo(
+        node = VhdlNodeInfo(
+            label = None,
+            library_name = None,
+            vhdl_version = None,
+            direct_deps = tuple([_node_of(i) for i in infos]),
+            srcs = (),
+            data = (),
+        ),
         all_libs = depset(transitive = [i.all_libs for i in infos], order = "postorder"),
         transitive_srcs = depset(transitive = [i.transitive_srcs for i in infos]),
         data = depset(transitive = [i.data for i in infos]),
@@ -557,4 +619,276 @@ vhdl_module = rule(
         ),
     ),
     doc = "Defines a VHDL entity and its generics. Its dependencies, sources and library are in its VhdlLibraryInfo.",
+)
+
+# ---------------------------------------------------------------------------
+# Dependency graph (debug view, like `bazel query --output graph`, VHDL aware)
+# ---------------------------------------------------------------------------
+
+_MAX_STEPS = 1000000  # Starlark has no recursion nor `while`: bounded iterative walks.
+
+def _real_deps(node):
+    """The labelled nodes among the direct deps of `node`; virtual nodes are looked through."""
+    deps = []
+    seen = {}
+    stack = list(reversed(node.direct_deps))
+    for _ in range(_MAX_STEPS):
+        if not stack:
+            break
+        dep = stack.pop()
+        if dep.label == None:
+            stack.extend(reversed(dep.direct_deps))
+        elif dep.label not in seen:
+            seen[dep.label] = True
+            deps.append(dep)
+    if stack:
+        fail("The VHDL dependency graph is too large to walk.")
+    return deps
+
+def _walk(roots, expand):
+    """Post-order walk (dependencies first) over the labelled nodes below `roots`, each once.
+
+    Args:
+        roots: list of VhdlNodeInfo.
+        expand: dict label -> bool saying whether the deps of a node are
+            followed, or None to follow them all.
+
+    Returns:
+        (list of nodes, dict label -> list of the nodes it depends on).
+    """
+    order = []
+    deps_of = {}
+    seen = {}
+    stack = [(node, False) for node in reversed(roots)]
+    for _ in range(_MAX_STEPS):
+        if not stack:
+            break
+        node, done = stack.pop()
+        if node.label == None:
+            stack.extend([(dep, False) for dep in reversed(node.direct_deps)])
+            continue
+        if done:
+            order.append(node)
+            continue
+        if node.label in seen:
+            continue
+        seen[node.label] = True
+        children = _real_deps(node) if (expand == None or expand[node.label]) else []
+        deps_of[node.label] = children
+        stack.append((node, True))
+        stack.extend([(dep, False) for dep in reversed(children)])
+    if stack:
+        fail("The VHDL dependency graph is too large to walk.")
+    return order, deps_of
+
+def extract_graph(vhdl_info):
+    """The dependency graph of Target(s) providing VhdlLibraryInfo, limited to modules.
+
+    Shown: the modules (vhdl_module), the libraries that contain modules (a
+    module somewhere below them), and the libraries without any module, only as
+    a leaf with their name and version (they are not developed). Virtual nodes
+    (accumulations of infos) are looked through.
+
+    Args:
+        vhdl_info: A Target providing VhdlLibraryInfo, a VhdlLibraryInfo, or a list thereof.
+
+    Returns:
+        struct(nodes, roots). `nodes` is a list in dependency order (dependencies
+        first) of structs with the fields:
+          label: str, e.g. '//axis:fifo'.
+          kind: 'module' or 'library'.
+          entity_name: entity of a module, None for a library.
+          generics: dict of the generics of a module.
+          library_name: library declared by the target.
+          library_names: tuple of the libraries a module is compiled into, after
+              sealing (several when a default-library module is also sealed
+              elsewhere); (library_name,) for a library.
+          vhdl_version: VHDL standard.
+          srcs: tuple of the short_path of the source files of the target.
+          data: tuple of the short_path of the data files of the target.
+          deps: tuple of the labels of the direct deps that are shown.
+          expanded: False for a library without any module, which is not developed.
+        `roots` is the tuple of the labels of the roots.
+    """
+    infos = _as_infos(vhdl_info)
+    roots = [_node_of(info) for info in infos]
+
+    # The modules, with the library they are compiled into after sealing.
+    modules = {}
+    for module in extract_modules(infos):
+        record = modules.setdefault(_label_str(module.label), {"module": module, "libraries": []})
+        if module.library_name not in record["libraries"]:
+            record["libraries"].append(module.library_name)
+
+    # Which nodes have a module in their closure (dependencies come first).
+    everything, all_deps = _walk(roots, None)
+    has_modules = {}
+    for node in everything:
+        has_modules[node.label] = (node.label in modules) or any([has_modules[dep.label] for dep in all_deps[node.label]])
+
+    # The nodes that are shown: libraries without modules are leaves.
+    nodes, deps_of = _walk(roots, has_modules)
+    shown = []
+    for node in nodes:
+        record = modules.get(node.label)
+        deps = tuple([dep.label for dep in deps_of[node.label]])
+        if record:
+            module = record["module"]
+            shown.append(struct(
+                label = node.label,
+                kind = "module",
+                entity_name = module.entity_name,
+                generics = module.generics,
+                library_name = node.library_name,
+                library_names = tuple(sorted(record["libraries"])),
+                vhdl_version = module.vhdl_version,
+                srcs = node.srcs,
+                data = node.data,
+                deps = deps,
+                expanded = True,
+            ))
+        else:
+            shown.append(struct(
+                label = node.label,
+                kind = "library",
+                entity_name = None,
+                generics = {},
+                library_name = node.library_name,
+                library_names = (node.library_name,),
+                vhdl_version = node.vhdl_version,
+                srcs = node.srcs,
+                data = node.data,
+                deps = deps,
+                expanded = has_modules[node.label],
+            ))
+
+    virtual_root = VhdlNodeInfo(label = None, library_name = None, vhdl_version = None, direct_deps = tuple(roots), srcs = (), data = ())
+    return struct(
+        nodes = shown,
+        roots = tuple([node.label for node in _real_deps(virtual_root)]),
+    )
+
+def _node_text(node):
+    if node.kind == "module":
+        generics = ""
+        if node.generics:
+            generics = "(%s)" % ", ".join(["%s=%s" % kv for kv in sorted(node.generics.items())])
+        return "module %s%s, lib %s %s" % (node.entity_name, generics, ",".join(node.library_names), node.vhdl_version)
+    return "lib %s %s" % (node.library_name, node.vhdl_version)
+
+def graph_tree(vhdl_info, include_files = False):
+    """The dependency graph of `extract_graph` as an indented tree (text).
+
+    A node already shown is not developed again: it is marked `(*)`.
+
+    With `include_files`, the files of a node are listed under it, before its
+    dependencies: `·` for a source file, `◆` for a data file.
+
+    Args:
+        vhdl_info: A Target providing VhdlLibraryInfo, a VhdlLibraryInfo, or a list thereof.
+        include_files: List the source and data files of each node.
+
+    Returns:
+        str, one line per node, ending with a newline.
+    """
+    graph = extract_graph(vhdl_info)
+    by_label = {node.label: node for node in graph.nodes}
+    lines = []
+    shown = {}
+
+    # (label, prefix of its line, prefix of the lines of its children)
+    stack = [(label, "", "") for label in reversed(graph.roots)]
+    for _ in range(_MAX_STEPS):
+        if not stack:
+            break
+        label, line_prefix, child_prefix = stack.pop()
+        node = by_label[label]
+        text = "%s [%s]" % (label, _node_text(node))
+        if label in shown and node.deps:
+            lines.append(line_prefix + text + " (*)")
+            continue
+        shown[label] = True
+        lines.append(line_prefix + text)
+        if include_files:
+            # Aligned under the text of the node; the bar keeps the branch to its dependencies.
+            file_prefix = child_prefix + ("│   " if node.deps else "    ")
+            lines.extend([file_prefix + "· " + path for path in node.srcs])
+            lines.extend([file_prefix + "◆ " + path for path in node.data])
+        for index in reversed(range(len(node.deps))):
+            is_last = index == len(node.deps) - 1
+            stack.append((
+                node.deps[index],
+                child_prefix + ("└── " if is_last else "├── "),
+                child_prefix + ("    " if is_last else "│   "),
+            ))
+    if stack:
+        fail("The VHDL dependency graph is too large to walk.")
+    return "\n".join(lines) + "\n" if lines else ""
+
+def _dot_escape(text):
+    return text.replace("\\", "\\\\").replace("\"", "\\\"")
+
+def graph_dot(vhdl_info, graph_name = "vhdl", include_files = False):
+    """The dependency graph of `extract_graph` in DOT, like `bazel query --output graph`.
+
+    An edge `"A" -> "B"` means that A depends on B. Modules are boxes, libraries
+    that contain modules are folders, libraries without modules are dashed folders.
+
+    With `include_files`, the files of a node are added to its label, one per
+    line: `·` for a source file, `◆` for a data file.
+
+    Args:
+        vhdl_info: A Target providing VhdlLibraryInfo, a VhdlLibraryInfo, or a list thereof.
+        graph_name: Name of the digraph.
+        include_files: Add the source and data files of each node to its label.
+
+    Returns:
+        str, ending with a newline.
+    """
+    graph = extract_graph(vhdl_info)
+    lines = ["digraph \"%s\" {" % _dot_escape(graph_name), "  node [shape=box];"]
+    for node in graph.nodes:
+        if node.kind == "module":
+            attrs = ""
+        elif node.expanded:
+            attrs = ", shape=folder"
+        else:
+            attrs = ", shape=folder, style=dashed"
+        text = _dot_escape(node.label) + "\\n" + _dot_escape(_node_text(node))
+        if include_files:
+            text += "".join(["\\n· " + _dot_escape(path) for path in node.srcs])
+            text += "".join(["\\n◆ " + _dot_escape(path) for path in node.data])
+        lines.append("  \"%s\" [label=\"%s\"%s]" % (_dot_escape(node.label), text, attrs))
+    for node in graph.nodes:
+        for dep in node.deps:
+            lines.append("  \"%s\" -> \"%s\"" % (_dot_escape(node.label), _dot_escape(dep)))
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+
+def _vhdl_graph_impl(ctx):
+    dot = ctx.actions.declare_file(ctx.label.name + ".dot")
+    tree = ctx.actions.declare_file(ctx.label.name + ".txt")
+    ctx.actions.write(dot, graph_dot(ctx.attr.deps, graph_name = ctx.label.name, include_files = ctx.attr.include_files))
+    ctx.actions.write(tree, graph_tree(ctx.attr.deps, include_files = ctx.attr.include_files))
+    return [DefaultInfo(files = depset([dot, tree]))]
+
+vhdl_graph = rule(
+    implementation = _vhdl_graph_impl,
+    attrs = {
+        "deps": attr.label_list(
+            providers = [VhdlLibraryInfo],
+            doc = "Roots of the graph: vhdl_library and vhdl_module targets.",
+        ),
+        "include_files": attr.bool(
+            default = False,
+            doc = "List the source and data files of each node (`·` sources, `◆` data).",
+        ),
+    },
+    doc = """Writes the VHDL dependency graph of its deps: <name>.dot and <name>.txt.
+
+    The graph is limited to modules (see `extract_graph`). Render it with
+    `bazel build //:graph && dot -Tsvg bazel-bin/graph.dot > graph.svg`.
+    """,
 )
