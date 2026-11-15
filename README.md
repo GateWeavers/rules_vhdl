@@ -12,6 +12,7 @@ Modern, hermetic, and automated VHDL simulation rules for [Bazel](https://bazel.
 - **VUnit Integration**: Native support for VUnit testbenches and custom Python runners.
 - **Cocotb 2.0 Support**: Modern Python-based verification using the new `cocotb_tools` runner API.
 - **Formal Verification**: Native SymbiYosys (`sby`), Yosys (GHDL plugin), and VHDL PSL property verification support (`vhdl_formal_test`, `vhdl_bmc_test`, `vhdl_cover_test`).
+- **Dependency Graph Visualization**: Generate textual ASCII trees and Graphviz DOT dependency diagrams of your VHDL libraries and modules (`vhdl_graph`, `extract_graph`).
 - **Bzlmod Ready**: Modern Bazel dependency management out of the box.
 - **Advanced Python Support**: Easily add custom Python libraries (like `crc`, `numpy`) to your simulation environment.
 
@@ -211,12 +212,37 @@ vhdl_wrapper(
 )
 ```
 
-To run with a GUI (GTKWave), use:
+### 9. Dependency Graph Visualization (`vhdl_graph`)
+
+Generates an ASCII dependency tree (`.txt`) and Graphviz DOT graph (`.dot`) for your VHDL modules and libraries:
+
+```starlark
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_graph")
+
+vhdl_graph(
+    name = "design_graph",
+    deps = [":top"],
+    include_files = True, # Optional: include source (·) and data (◆) files
+)
+```
+
+Build and inspect the graph:
+```bash
+bazel build //path/to:design_graph
+
+# View ASCII tree
+cat bazel-bin/path/to/design_graph.txt
+
+# Render SVG with Graphviz
+dot -Tsvg bazel-bin/path/to/design_graph.dot -o design_graph.svg
+```
+
+To run with a GUI (GTKWave) for VUnit simulations, use:
 ```bash
 bazel run //path/to:tb_uart -- --gui
 ```
 
-### 3. Custom Python Dependencies
+### 10. Custom Python Dependencies
 
 If your simulation runner needs extra Python libraries (e.g., `crc`), follow these steps:
 
@@ -354,6 +380,21 @@ vhdl_eqy_test(
     gate = ":counter_revised_lib",
     top_entity = "counter",
     strategy = "sat",
+)
+```
+
+### 5. Dependency Graph Visualization
+Demonstrates how to define and inspect modular VHDL dependency hierarchies and export them as ASCII trees or Graphviz DOT graphs.
+- **Rules**: `vhdl_module`, `vhdl_library`, `vhdl_graph`.
+- **Location**: `examples/graph`
+
+```starlark
+load("@gateweavers_rules_vhdl//vhdl:defs.bzl", "vhdl_graph", "vhdl_library", "vhdl_module")
+
+vhdl_graph(
+    name = "design_graph",
+    deps = [":top"],
+    include_files = True,
 )
 ```
 

@@ -22,11 +22,26 @@ Defines a specific VHDL entity, its generics, and its position in the dependency
 | Attribute | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `entity_name` | `string` | Mandatory | The name of the VHDL entity. |
-| `srcs` | `label_list` | `[]` | Source files for this module. |
+| `srcs` | `label_list` | Mandatory | VHDL source files declaring the entity (`.vhd`, `.vhdl`). |
 | `library_name` | `string` | `"work"` | The library this module belongs to. |
 | `generics` | `string_dict`| `{}` | Map of generic names to values (as strings). |
-| `deps` | `label_list` | `[]` | Transitive dependencies. |
-| `data` | `label_list` | `[]` | Extra files to package (e.g. constraints, templates) included in the DefaultInfo provider. |
+| `deps` | `label_list` | `[]` | Transitive dependencies (`vhdl_library` or `vhdl_module`). |
+| `data` | `label_list` | `[]` | Extra files to package (e.g. constraints, memory init) included in DefaultInfo and propagated transitively. |
+
+### `vhdl_graph`
+Generates dependency graph visualizations (`<name>.dot` and `<name>.txt`) for a set of VHDL targets.
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `deps` | `label_list` | Mandatory | Root targets (`vhdl_library` or `vhdl_module`) providing `VhdlLibraryInfo`. |
+| `include_files`| `bool` | `False` | Whether to list the source and data files of each node (`·` sources, `◆` data). |
+
+Outputs:
+- `<name>.dot`: Graphviz DOT representation of the dependency graph.
+- `<name>.txt`: Indented ASCII tree representation of the dependency graph.
+
+### `vhdl_flag`
+String build setting flag used to configure VHDL simulation parameters (e.g., simulator type, version).
 
 ### `vhdl_translate`
 Translates VHDL 2008/2019 files to VHDL 93 by performing synthesis using GHDL with the `--synth` flag.
@@ -39,6 +54,38 @@ Translates VHDL 2008/2019 files to VHDL 93 by performing synthesis using GHDL wi
 | `preserve_ports`| `bool` | `True` | Whether to preserve original top-level unit I/O ports. If True, uses `--out=vhdl`. If False, uses `--out=raw-vhdl`. |
 | `deps` | `label_list` | `[]` | Transitive library dependencies required for compilation. |
 | `simulator` | `label` | `None` | Optional explicit toolchain label to use for synthesis. |
+
+### `vhdl_wrapper`
+Generates a VHDL adapter wrapper to bridge between record-based ports and flattened ports for backward compatibility or synthesis.
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `src` | `label` | Mandatory | The source target to wrap (`vhdl_library` or `vhdl_module`). |
+| `entity_name` | `string` | Mandatory | Name of the VHDL entity to wrap. |
+| `out` | `string` | `None` | Optional output wrapper file name. Defaults to `<target_name>.vhd`. |
+| `reverse` | `bool` | `False` | If False, generates flat wrapper around record entity. If True, generates record wrapper around flat entity. |
+
+### `vhdl_translate_and_verify` (Macro)
+Translates a target design to VHDL 93 and automatically defines parallel test targets (`_orig_test` and `_translated_test`) using a user-specified testbench (VHDL, VUnit, or Cocotb) to verify functional equivalence.
+
+---
+
+## Starlark API & Helper Functions
+
+Exported via `@gateweavers_rules_vhdl//vhdl:defs.bzl`:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `extract_sources` | `(vhdl_info)` | Returns compile-order segments (structs with `id = "<lib>@<version>#<index>"`, `library_name`, `vhdl_version`, `sources`). Valid for sequential compilers. |
+| `group_segments` | `(segments)` | Groups the segments of `extract_sources` by `(library, version)` with `id = "<lib>@<version>"`. For tools that determine compile order internally. |
+| `extract_modules` | `(vhdl_info)` | Extracts module structs (`entity_name`, `generics`, `label`, `library_name`, `vhdl_version`) in topological compile order. |
+| `find_module` | `(vhdl_info, entity_name, library_name = None)` | Finds a single module struct by entity name and optional library name. |
+| `extract_srcs` | `(vhdl_info)` | Returns a flat `depset[File]` of all VHDL source files in the transitive closure. |
+| `extract_data` | `(vhdl_info)` | Returns a flat `depset[File]` of all data files in the transitive closure. |
+| `extract_graph` | `(vhdl_info)` | Extracts the dependency graph of targets, limited to modules. |
+| `graph_tree` | `(vhdl_info, include_files = False)` | Returns an indented ASCII tree representation of the dependency graph. |
+| `graph_dot` | `(vhdl_info, graph_name = "vhdl", include_files = False)` | Returns a Graphviz DOT representation of the dependency graph. |
+| `merge_vhdl_library_infos` | `(infos)` | Accumulates several `VhdlLibraryInfo` providers into one virtual node. |
 
 ---
 
