@@ -17,10 +17,10 @@ VUnit simulations hermetically within Bazel.
 """
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources","group_segments")
 load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 
-# --- LE TEMPLATE PYTHON ---
+# PYTHON runner template
 _RUNNER_TEMPLATE = """
 from sim.vunit_bazel_helper import get_vunit_from_bazel, add_lib_from_bazel, set_nvc_options
 
@@ -41,7 +41,6 @@ if __name__ == "__main__":
     main()
 """
 
-# --- REGLE 1 : Générateur de Runner ---
 def _vunit_runner_gen_impl(ctx):
     out_file = ctx.outputs.out
     ctx.actions.write(
@@ -65,7 +64,6 @@ def _vunit_context_impl(ctx):
     toolchain = ctx.toolchains["@gateweavers_rules_vhdl//simulator:toolchain_type"]
 
     binary_file = None
-    library_path = None
     extra_files = depset()
     sim_type = ""
 
@@ -84,7 +82,7 @@ def _vunit_context_impl(ctx):
 
     libraries_config = {}
 
-    dut_libs = extract_sources(ctx.attr.dut)
+    dut_libs = group_segments(extract_sources(ctx.attr.dut))
 
     for lib_struct in dut_libs:
         lib_name = lib_struct.library_name
