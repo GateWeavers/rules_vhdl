@@ -16,7 +16,8 @@ This module provides rules and macros for executing VHDL testbenches using
 GHDL or NVC, as well as high-level VUnit integration.
 """
 
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "VhdlModuleInfo", "extract_sources")
+load("@gateweavers_rules_vhdl//vhdl:providers.bzl", "VhdlLibraryInfo", "VhdlModuleInfo")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "extract_sources")
 load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 load("@gateweavers_rules_vhdl//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 

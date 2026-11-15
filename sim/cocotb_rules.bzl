@@ -14,7 +14,8 @@ Cocotb 2.0 integration rules for Bazel.
 """
 
 load("@aspect_rules_py//py:defs.bzl", "py_test")
-load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
+load("@gateweavers_rules_vhdl//vhdl:providers.bzl", "VhdlLibraryInfo")
+load("@gateweavers_rules_vhdl//vhdl:vhdl.bzl", "extract_sources")
 load("@gateweavers_rules_vhdl//simulator:transition.bzl", "vhdl_sim_config_transition")
 
 def _cocotb_context_impl(ctx):

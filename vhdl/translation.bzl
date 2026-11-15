@@ -13,7 +13,8 @@
 VHDL Translation and wrapper generation rules.
 """
 
-load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "vhdl_library", "extract_sources")
+load("//vhdl:providers.bzl", "VhdlLibraryInfo")
+load("//vhdl:vhdl.bzl", "extract_sources", "vhdl_library")
 load("//simulator:transition.bzl", "vhdl_sim_config_transition")
 load("//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 load("//sim:sim.bzl", "vhdl_test")

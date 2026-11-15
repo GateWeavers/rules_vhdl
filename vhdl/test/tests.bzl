@@ -14,22 +14,43 @@
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(
-    "//vhdl:vhdl.bzl",
+    "//vhdl:providers.bzl",
+    "VhdlConfigInfo",
     "VhdlLibraryInfo",
+    "VhdlLibraryUnitInfo",
     "VhdlModuleInfo",
-    "extract_data",
+    "VhdlNodeInfo",
+)
+load(
+    "//vhdl:graph.bzl",
     "extract_graph",
-    "extract_modules",
-    "extract_sources",
-    "extract_srcs",
-    "find_module",
     "graph_dot",
     "graph_tree",
+    "vhdl_graph",
+)
+load(
+    "//vhdl:utils.bzl",
+    "DEFAULT_VHDL_VERSION",
+    "VHDL_VERSIONS",
+    "extract_modules",
+    "find_module",
+)
+load(
+    "//vhdl:vhdl.bzl",
+    "extract_data",
+    "extract_sources",
+    "extract_srcs",
     "group_segments",
     "merge_vhdl_library_infos",
-    "vhdl_graph",
     "vhdl_library",
     "vhdl_module",
+)
+load(
+    "//vhdl:defs.bzl",
+    defs_VhdlLibraryInfo = "VhdlLibraryInfo",
+    defs_extract_sources = "extract_sources",
+    defs_vhdl_graph = "vhdl_graph",
+    defs_vhdl_library = "vhdl_library",
 )
 load("//vhdl:translation.bzl", "vhdl_translate")
 
@@ -42,6 +63,12 @@ def _basic_lib_test_impl(ctx):
     if VhdlLibraryInfo not in target:
         asserts.true(env, False, "VhdlLibraryInfo provider is missing")
         return analysistest.end(env)
+
+    # Verify defs.bzl re-exports match
+    asserts.equals(env, VhdlLibraryInfo, defs_VhdlLibraryInfo)
+    asserts.equals(env, vhdl_library, defs_vhdl_library)
+    asserts.equals(env, extract_sources, defs_extract_sources)
+    asserts.equals(env, vhdl_graph, defs_vhdl_graph)
 
     # 2. Check compile-order segment format from extract_sources
     extracted = extract_sources(target)

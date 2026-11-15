@@ -13,7 +13,8 @@
 Rules and macros for VHDL Formal Verification using SymbiYosys (SBY), Yosys, and GHDL.
 """
 
-load("//vhdl:vhdl.bzl", "VhdlLibraryInfo", "extract_sources")
+load("//vhdl:providers.bzl", "VhdlLibraryInfo")
+load("//vhdl:vhdl.bzl", "extract_sources")
 load("//simulator:ghdl.bzl", "map_vhdl_version_to_ghdl_flag")
 
 def _vhdl_formal_test_impl(ctx):
