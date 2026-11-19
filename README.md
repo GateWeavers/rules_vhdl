@@ -120,6 +120,10 @@ vunit_sim(
     dut = ":uart_lib",
 )
 ```
+To run with a GUI (GTKWave) for VUnit simulations, use:
+```bash
+bazel run //path/to:tb_uart -- --gui
+```
 
 ### 4. Running a Cocotb Simulation
 
@@ -240,11 +244,6 @@ cat bazel-bin/path/to/design_graph.txt
 dot -Tsvg bazel-bin/path/to/design_graph.dot -o design_graph.svg
 ```
 
-To run with a GUI (GTKWave) for VUnit simulations, use:
-```bash
-bazel run //path/to:tb_uart -- --gui
-```
-
 ### 10. Custom Python Dependencies
 
 If your simulation runner needs extra Python libraries (e.g., `crc`), follow these steps:
@@ -349,6 +348,10 @@ vunit_sim(
     main = "custom_runner.py",
     deps = ["@pypi//crc"], # External Python library
 )
+```
+To run with a GUI (GTKWave) for VUnit simulations, use:
+```bash
+bazel run //path/to:tb_uart -- --gui
 ```
 
 ### 4. Formal Verification (BMC, Cover, Prove, Equivalence Checking)
